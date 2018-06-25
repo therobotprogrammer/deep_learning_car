@@ -12,27 +12,41 @@ import numpy as np
 import os
 import pandas as pd
 import keras
+import cv2
 
 # Here, `x_set` is list of path to the images
 # and `y_set` are the associated classes.
 
 class DataGenerator(keras.utils.Sequence):
 
-    def __init__(self, x_set, y_set, batch_size):
-        self.x, self.y = x_set, y_set
+    def __init__(self, input_data_set, labels_set, batch_size, image_dimention = (160,320), n_channels = 3, shuffle = True):
+        self.input_data_set = input_data_set
+        self.labels_set = labels_set
         self.batch_size = batch_size
+        self.image_dimention = image_dimention
+        self.n_channels = n_channels
+
 
     def __len__(self):
-        return int(np.ceil(len(self.x) / float(self.batch_size)))
+        return int(np.ceil(len(self.input_data_set) / float(self.batch_size)))
 
     def __getitem__(self, idx):
-        batch_x = self.x[idx * self.batch_size:(idx + 1) * self.batch_size]
-        batch_y = self.y[idx * self.batch_size:(idx + 1) * self.batch_size]
-
-        return np.array([
-            resize(imread(file_name), (160, 320))
-               for file_name in batch_x]), np.array(batch_y)
-    
+        batch_x = self.input_data_set[idx * self.batch_size:(idx + 1) * self.batch_size]
+        batch_y = self.labels_set[idx * self.batch_size:(idx + 1) * self.batch_size]
+        
+        
+        batch_input_data_image_array = np.empty((self.batch_size, *self.image_dimention, self.n_channels))     
+        
+        batch_input_data = self.input_data_set[idx * self.batch_size:(idx + 1) * self.batch_size]
+        batch_label_data = self.labels_set[idx * self.batch_size:(idx + 1) * self.batch_size]
+            
+        for i, file_name in enumerate(batch_input_data):
+            print((file_name))
+            batch_input_data_image_array[i] = cv2.imread(file_name)                    
+        return batch_input_data_image_array, np.array(batch_label_data)
+        
+        
+ 
 
 
 
@@ -65,8 +79,16 @@ data_dir = '/home/pt/Desktop/data'
 
 driving_log = update_driving_log(data_dir)
 
-batch_size = 5
-test = DataGenerator(driving_log['center'], driving_log['steering'], batch_size)
+batch_size = 16
+
+params = {
+          'image_dimention': (160,320),
+          'batch_size': 16,
+          'n_channels': 3,
+          'shuffle': True,
+         }
+
+test = DataGenerator(driving_log['center'], driving_log['steering'], **params)
 
 
 iterator = test.__iter__()
@@ -76,6 +98,7 @@ batch = next(iterator)
 #batch = test.__getitem__(5)
 
 
+'''
 from matplotlib import pyplot as plt
 
 for i in range(0,batch_size):
@@ -83,7 +106,7 @@ for i in range(0,batch_size):
     
     plt.show()
 
-
+'''
 
 
 

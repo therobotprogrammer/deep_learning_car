@@ -19,38 +19,62 @@ import cv2
 
 class DataGenerator(keras.utils.Sequence):
 
-    def __init__(self, input_data_set, labels_set, batch_size, image_dimention = (160,320), n_channels = 3, shuffle = True):
+    def __init__(self, input_data_set, labels_set, batch_size, image_dimention = (160,320), n_channels = 3, shuffle = True, time_steps = 0):
         self.input_data_set = input_data_set
         self.labels_set = labels_set
         self.batch_size = batch_size
         self.image_dimention = image_dimention
         self.n_channels = n_channels
-
+        self.time_steps = time_steps
 
     def __len__(self):
         return int(np.ceil(len(self.input_data_set) / float(self.batch_size)))
 
     def __getitem__(self, idx):
 
-        batch_input_data_image_array = np.empty((self.batch_size, *self.image_dimention, self.n_channels))     
-        
-        batch_input_data = self.input_data_set[idx * self.batch_size:(idx + 1) * self.batch_size]
-        batch_label_data = self.labels_set[idx * self.batch_size:(idx + 1) * self.batch_size]
+        if self.time_steps == 0:
+            batch_input_data_image_array = np.empty((self.batch_size, *self.image_dimention, self.n_channels))     
             
-        '''
-        for i, file_name in enumerate(batch_input_data):
-            print((file_name))
-            batch_input_data_image_array[i] = cv2.imread(file_name) 
-        '''
-
-        for i, file_name in enumerate(batch_input_data):
-            print((file_name))
-            #batch_input_data_image_array[i] = cv2.imread(file_name)  
-            batch_input_data_image_array[i] = resize(imread(file_name), self.image_dimention  )
-
-                  
-        return batch_input_data_image_array, np.array(batch_label_data)
+            batch_input_data = self.input_data_set[idx * self.batch_size:(idx + 1) * self.batch_size]
+            batch_label_data = self.labels_set[idx * self.batch_size:(idx + 1) * self.batch_size]
+                
+            '''
+            for i, file_name in enumerate(batch_input_data):
+                print((file_name))
+                batch_input_data_image_array[i] = cv2.imread(file_name) 
+            '''
+    
+            for i, file_name in enumerate(batch_input_data):
+                print((file_name))
+                #batch_input_data_image_array[i] = cv2.imread(file_name)  
+                batch_input_data_image_array[i] = resize(imread(file_name), self.image_dimention  )
+    
+                      
+            return batch_input_data_image_array, np.array(batch_label_data)
         
+        else:
+            batch_input_data_image_array = np.empty((self.batch_size, self.time_steps, *self.image_dimention, self.n_channels))     
+            
+            batch_input_data = self.input_data_set[idx * self.batch_size:(idx + 1) * self.batch_size]
+            batch_label_data = self.labels_set[idx * self.batch_size:(idx + 1) * self.batch_size]
+                
+            '''
+            for i, file_name in enumerate(batch_input_data):
+                print((file_name))
+                batch_input_data_image_array[i] = cv2.imread(file_name) 
+            '''
+    
+            for i, file_name in enumerate(batch_input_data):
+                print((file_name))
+                #batch_input_data_image_array[i] = cv2.imread(file_name)  
+                #batch_input_data_image_array[i] = resize(imread(file_name), self.image_dimention  )
+                
+                
+                for t in range(0,self.time_steps):
+                    batch_input_data_image_array[i,t] = resize(imread(file_name), self.image_dimention  )
+    
+                      
+            return batch_input_data_image_array, np.array(batch_label_data)
         
  
 
@@ -92,6 +116,7 @@ params = {
           'batch_size': 16,
           'n_channels': 3,
           'shuffle': True,
+          'time_steps': 3
          }
 
 test = DataGenerator(driving_log['center'], driving_log['steering'], **params)
@@ -104,6 +129,7 @@ batch = next(iterator)
 #batch = test.__getitem__(5)
 
 
+'''
 
 from matplotlib import pyplot as plt
 
@@ -111,7 +137,7 @@ for i in range(0,batch_size):
     plt.imshow(batch[0][i], interpolation='nearest')    
     plt.show()
 
-
+'''
 
 
 

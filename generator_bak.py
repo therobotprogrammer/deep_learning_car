@@ -59,31 +59,21 @@ class DataGenerator(keras.preprocessing.sequence.TimeseriesGenerator):
             batch_label_data = self.labels_set[idx * self.batch_size:(idx + 1) * self.batch_size]
                 
             for i, file_name in enumerate(batch_input_data):
-                print((file_name))
+                print(file_name)
                 batch_input_data_image_array[i] = cv2.imread(file_name)                    
             return batch_input_data_image_array, np.array(batch_label_data)
-        
-        
-        else:
-            batch_input_data_image_array = np.empty((self.batch_size, self.length, *self.image_dimention, self.n_channels))     
 
-            batch_input_data = self.input_data_set[idx * self.batch_size:(idx + 1) * self.batch_size]
-            batch_label_data = self.labels_set[idx * self.batch_size:(idx + 1) * self.batch_size]
-                
-            for i, file_name in enumerate(batch_input_data):
-                print((file_name))
-                batch_input_data_image_array[i] = cv2.imread(file_name)                    
-            return batch_input_data_image_array, np.array(batch_label_data)
         
         
         
         
-    
+'''   
     def on_epoch_end(self):
         'Updates indexes after each epoch'
         self.indexes = np.arange(len(self.input_data_set))
         if self.shuffle == True:
             np.random.shuffle(self.indexes)
+'''
     
         #return np.array([resize(imread(file_name), (160, 320)) for file_name in self.batch_input_data]), np.array(batch_label_data)
     

@@ -31,18 +31,24 @@ class DataGenerator(keras.utils.Sequence):
         return int(np.ceil(len(self.input_data_set) / float(self.batch_size)))
 
     def __getitem__(self, idx):
-        batch_x = self.input_data_set[idx * self.batch_size:(idx + 1) * self.batch_size]
-        batch_y = self.labels_set[idx * self.batch_size:(idx + 1) * self.batch_size]
-        
-        
+
         batch_input_data_image_array = np.empty((self.batch_size, *self.image_dimention, self.n_channels))     
         
         batch_input_data = self.input_data_set[idx * self.batch_size:(idx + 1) * self.batch_size]
         batch_label_data = self.labels_set[idx * self.batch_size:(idx + 1) * self.batch_size]
             
+        '''
         for i, file_name in enumerate(batch_input_data):
             print((file_name))
-            batch_input_data_image_array[i] = cv2.imread(file_name)                    
+            batch_input_data_image_array[i] = cv2.imread(file_name) 
+        '''
+
+        for i, file_name in enumerate(batch_input_data):
+            print((file_name))
+            #batch_input_data_image_array[i] = cv2.imread(file_name)  
+            batch_input_data_image_array[i] = resize(imread(file_name), self.image_dimention  )
+
+                  
         return batch_input_data_image_array, np.array(batch_label_data)
         
         
@@ -98,23 +104,12 @@ batch = next(iterator)
 #batch = test.__getitem__(5)
 
 
-'''
+
 from matplotlib import pyplot as plt
 
 for i in range(0,batch_size):
-    plt.imshow(batch[0][i], interpolation='nearest')
-    
+    plt.imshow(batch[0][i], interpolation='nearest')    
     plt.show()
-
-'''
-
-
-
-
-
-
-
-
 
 
 

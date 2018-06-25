@@ -11,15 +11,13 @@ import keras
 
 class DataGenerator(keras.utils.Sequence):
     'Generates data for Keras'
-    def __init__(self, list_IDs, labels, batch_size=32, dim=(32,32,32), n_channels=1,
-                 n_classes=10, shuffle=True):
+    def __init__(self, list_IDs, labels, batch_size=32, dim=(160,320), n_channels=3, shuffle=True):
         'Initialization'
         self.dim = dim
         self.batch_size = batch_size
         self.labels = labels
         self.list_IDs = list_IDs
         self.n_channels = n_channels
-        self.n_classes = n_classes
         self.shuffle = shuffle
         self.on_epoch_end()
 
@@ -47,6 +45,7 @@ class DataGenerator(keras.utils.Sequence):
             np.random.shuffle(self.indexes)
 
     def __data_generation(self, list_IDs_temp):
+        
         'Generates data containing batch_size samples' # X : (n_samples, *dim, n_channels)
         # Initialization
         X = np.empty((self.batch_size, *self.dim, self.n_channels))
@@ -64,3 +63,79 @@ class DataGenerator(keras.utils.Sequence):
     
     
     
+    
+        
+        batch_input_data_image_array = np.empty((self.batch_size, *self.dim, self.n_channels))
+        batch_label_data = np.empty((self.batch_size), dtype=int)
+        
+        
+        batch_input_data = self.input_data_set[idx * self.batch_size:(idx + 1) * self.batch_size]
+        batch_label_data = self.labels_set[idx * self.batch_size:(idx + 1) * self.batch_size]
+
+        #self.id_list.append[idx]
+    
+        for i, file_name in enumerate(batch_input_data):
+            #self.imagename_list.insert[0,file_name]            
+            print((file_name))
+            #np.array[resize(imread(file_name), (160, 320))]
+            batch_input_data_image_array[i] = cv2.imread(file_name)
+            #print (type(im))
+            #print(im.shape)
+            
+        
+        return batch_input_data_image_array, np.array(batch_label_data)
+    
+    
+
+
+
+
+    
+def strip_filenames(old_path):
+    old_path = old_path.split("\\") #handles windows generated files
+    *directory, filename = old_path        
+    directory, filename = os.path.split(filename) #handles linux generated files
+    return("/" + filename) 
+    
+
+def update_driving_log(data_dir):    
+    driving_log_csv = data_dir + '/' + 'driving_log.csv'
+    new_image_path = data_dir + '/IMG'
+    driving_log_pd = pd.read_csv(driving_log_csv)
+    driving_log_pd_temp = driving_log_pd.iloc[:,0:3]    
+    driving_log_pd_temp = driving_log_pd_temp.applymap(strip_filenames)
+    driving_log_pd_temp = new_image_path + driving_log_pd_temp.astype(str)    
+    driving_log_pd.iloc[:,0:3] = driving_log_pd_temp  
+    
+    driving_log_pd.columns = ['center','left', 'right', 'x','y','z','steering']
+    
+    driving_log_pd.to_csv(driving_log_csv, index = False, header = False)    
+    
+    
+    return driving_log_pd
+
+
+data_dir = '/home/pt/Desktop/data'
+
+driving_log = update_driving_log(data_dir)
+
+
+
+
+
+
+batch_size = 5
+
+params = {
+          'dim': (160,320),
+          'batch_size': 16,
+          'n_channels': 3,
+          'shuffle': True,
+         }
+
+test = DataGenerator(driving_log['center'], driving_log['steering'], **params) #why **
+
+
+iterator = test.__iter__()
+
+batch = next(iterator)

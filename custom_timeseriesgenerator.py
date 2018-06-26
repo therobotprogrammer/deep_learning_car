@@ -1,0 +1,171 @@
+from skimage.io import imread
+from skimage.transform import resize
+import numpy as np
+import os
+import pandas as pd
+import keras
+import cv2
+
+
+class TimeseriesGenerator_new(keras.utils.Sequence):
+
+    def __init__(self, data, targets, length,
+                 sampling_rate=1,
+                 stride=1,
+                 start_index=0,
+                 end_index=None,
+                 shuffle=False,
+                 reverse=True,
+                 batch_size=4):
+        self.data = data
+        self.targets = targets
+        self.length = length
+        self.sampling_rate = sampling_rate
+        self.stride = stride
+        self.start_index = start_index + length
+        if end_index is None:
+            end_index = len(data) - 1
+        self.end_index = end_index
+        self.shuffle = shuffle
+        self.reverse = reverse
+        self.batch_size = batch_size
+        
+        self.dimention = (160,320)
+        self.n_channels = 3
+        
+
+        if self.start_index > self.end_index:
+            raise ValueError('`start_index+length=%i > end_index=%i` '
+                             'is disallowed, as no part of the sequence '
+                             'would be left to be used as current step.'
+                             % (self.start_index, self.end_index))
+
+    def __len__(self):
+        return (self.end_index - self.start_index +
+                self.batch_size * self.stride) // (self.batch_size * self.stride)
+
+    def _empty_batch(self, num_rows):
+        samples_shape = [num_rows, self.length // self.sampling_rate, *self.dimention, self.n_channels]
+        samples_shape.extend(self.data.shape[1:])
+        targets_shape = [num_rows]
+        targets_shape.extend(self.targets.shape[1:])            
+        return np.empty(samples_shape), np.empty(targets_shape)
+
+    def __getitem__(self, index):
+        if self.shuffle:
+            rows = np.random.randint(
+                self.start_index, self.end_index + 1, size=self.batch_size)
+        else:
+            i = self.start_index + self.batch_size * self.stride * index
+            rows = np.arange(i, min(i + self.batch_size *
+                                    self.stride, self.end_index + 1), self.stride)
+
+        samples, targets = self._empty_batch(len(rows))
+        
+        
+        
+        
+        
+        
+        
+        for j, row in enumerate(rows):
+            indices = range(rows[j] - self.length, rows[j], self.sampling_rate)
+            t = (self.data[list(indices)])
+            print (*t)
+            #print(indices)
+            #for timestamp in range(0,self.length):
+                #print(self.data[list(indices)])
+                #print(self.targets[list(rows[j])])
+            #samples[j] = self.data[list(indices)] ## BUG: indices is a range type. to use it on dataframe, use list(indices)
+            #targets[j] = self.targets[list(rows[j])]
+        if self.reverse:
+            return samples[:, ::-1, ...], targets
+        return samples, targets
+    
+     
+
+
+    
+def strip_filenames(old_path):
+    old_path = old_path.split("\\") #handles windows generated files
+    *directory, filename = old_path        
+    directory, filename = os.path.split(filename) #handles linux generated files
+    return("/" + filename) 
+    
+
+def update_driving_log(data_dir, driving_log_csv = None, debug = False):  
+    if driving_log_csv == None:
+        driving_log_csv = data_dir + '/' + 'driving_log.csv'
+        
+    new_image_path = ''
+    if debug == False:
+        new_image_path = data_dir + '/IMG'
+    
+    driving_log_pd = pd.read_csv(driving_log_csv, header= None)
+    driving_log_pd_temp = driving_log_pd.iloc[:,0:3]    
+    driving_log_pd_temp = driving_log_pd_temp.applymap(strip_filenames)
+    
+    driving_log_pd_temp = new_image_path + driving_log_pd_temp.astype(str)    
+    driving_log_pd.iloc[:,0:3] = driving_log_pd_temp      
+    
+    driving_log_pd.to_csv(driving_log_csv, index = False, header = False)    
+    
+    driving_log_pd.columns = ['center','left', 'right', 'x','y','z','steering']    
+    
+    return driving_log_pd
+
+
+
+data_dir = '/home/pt/Desktop/data'
+driving_log_csv = data_dir + '/' + 'driving_log_tester.csv'
+
+
+driving_log = update_driving_log(data_dir, driving_log_csv, debug = True)
+
+
+batch_size = 16
+
+'''
+params = {
+          'image_dimention': (160,320),
+          'batch_size': 16,
+          'n_channels': 3,
+          'shuffle': True,
+          'length': 0
+         }
+'''
+
+#test = DataGenerator(driving_log['center'], driving_log['steering'], **params)
+
+params = {
+            'length': 10
+         }
+
+from keras.preprocessing.sequence import TimeseriesGenerator
+import numpy as np
+test = TimeseriesGenerator_new(driving_log['center'], driving_log['steering'], **params)
+
+iterator = test.__iter__()
+
+batch = next(iterator)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -5,6 +5,7 @@ import os
 import pandas as pd
 import keras
 import cv2
+from matplotlib import pyplot as plt
 
 
 class TimeseriesGenerator_new(keras.utils.Sequence):
@@ -15,7 +16,7 @@ class TimeseriesGenerator_new(keras.utils.Sequence):
                  start_index=0,
                  end_index=None,
                  shuffle=False,
-                 reverse=True,
+                 reverse=False,
                  batch_size=4):
         self.data = data
         self.targets = targets
@@ -30,7 +31,7 @@ class TimeseriesGenerator_new(keras.utils.Sequence):
         self.reverse = reverse
         self.batch_size = batch_size
         
-        self.dimention = (160,320)
+        self.image_dimention = (160,320)
         self.n_channels = 3
         
 
@@ -45,7 +46,7 @@ class TimeseriesGenerator_new(keras.utils.Sequence):
                 self.batch_size * self.stride) // (self.batch_size * self.stride)
 
     def _empty_batch(self, num_rows):
-        samples_shape = [num_rows, self.length // self.sampling_rate, *self.dimention, self.n_channels]
+        samples_shape = [num_rows, self.length // self.sampling_rate, *self.image_dimention, self.n_channels]
         samples_shape.extend(self.data.shape[1:])
         targets_shape = [num_rows]
         targets_shape.extend(self.targets.shape[1:])            
@@ -65,25 +66,26 @@ class TimeseriesGenerator_new(keras.utils.Sequence):
         
         
         
-        
-        
-        
         for j, row in enumerate(rows):
             indices = range(rows[j] - self.length, rows[j], self.sampling_rate)
-            t = (self.data[list(indices)])
-            print (*t)
-            #print(indices)
-            #for timestamp in range(0,self.length):
-                #print(self.data[list(indices)])
-                #print(self.targets[list(rows[j])])
-            #samples[j] = self.data[list(indices)] ## BUG: indices is a range type. to use it on dataframe, use list(indices)
-            #targets[j] = self.targets[list(rows[j])]
+            file_names_time_series = self.data[list(indices)]  
+            #print(*file_names_time_series)
+            #get_images(c)             
+            
+            for t, file_at_timestep in enumerate(file_names_time_series): #we did not use time 0 to t because length will be different if we skip frames
+                samples[j, t] = resize(imread(file_at_timestep), self.image_dimention)
+                #print(t,file_at_timestep)
+                
+
+            targets[j] = self.targets[rows[j]]
+            
         if self.reverse:
             return samples[:, ::-1, ...], targets
         return samples, targets
     
      
-
+            
+            
 
     
 def strip_filenames(old_path):
@@ -93,12 +95,12 @@ def strip_filenames(old_path):
     return("/" + filename) 
     
 
-def update_driving_log(data_dir, driving_log_csv = None, debug = False):  
+def update_driving_log(data_dir, driving_log_csv = None, ralative_path = False):  
     if driving_log_csv == None:
         driving_log_csv = data_dir + '/' + 'driving_log.csv'
         
     new_image_path = ''
-    if debug == False:
+    if ralative_path == False:
         new_image_path = data_dir + '/IMG'
     
     driving_log_pd = pd.read_csv(driving_log_csv, header= None)
@@ -116,11 +118,14 @@ def update_driving_log(data_dir, driving_log_csv = None, debug = False):
 
 
 
-data_dir = '/home/pt/Desktop/data'
-driving_log_csv = data_dir + '/' + 'driving_log_tester.csv'
+
+##########################################################################
+    
+data_dir = '/home/pt/Desktop/debug_data'
+driving_log_csv = data_dir + '/' + 'driving_log.csv'
 
 
-driving_log = update_driving_log(data_dir, driving_log_csv, debug = True)
+driving_log = update_driving_log(data_dir, driving_log_csv)
 
 
 batch_size = 16
@@ -141,7 +146,8 @@ params = {
             'length': 10
          }
 
-from keras.preprocessing.sequence import TimeseriesGenerator
+
+#from keras.preprocessing.sequence import TimeseriesGenerator
 import numpy as np
 test = TimeseriesGenerator_new(driving_log['center'], driving_log['steering'], **params)
 
@@ -149,23 +155,26 @@ iterator = test.__iter__()
 
 batch = next(iterator)
 
+samples_batch = batch[0]
+labels_batch =  batch[1]
 
 
+volume_shape = samples_batch.shape
+index = {'sample':0,'time':1,'height':2,'width':3,'channels':4}
+
+total_samples = volume_shape[index['sample']] 
+total_timesteps = volume_shape[index['time']]
+total_images = total_samples * total_timesteps                         
 
 
+plt.figure(figsize=(15, 3))
 
+image_count = 1
+for s, sample in enumerate(samples_batch):    
+    for t, timestep in enumerate(sample):
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        plt.subplot(total_samples, total_timesteps, image_count)
+        image_count = image_count + 1
+        plt.imshow(timestep)
+        plt.axis('off')
+plt.show()

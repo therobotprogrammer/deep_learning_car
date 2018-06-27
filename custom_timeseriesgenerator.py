@@ -10,7 +10,7 @@ from matplotlib import pyplot as plt
 
 class TimeseriesGenerator_new(keras.utils.Sequence):
 
-    def __init__(self, data, targets, length,
+    def __init__(self, multi_sensor_data, targets, length,
                  sampling_rate=1,
                  stride=1,
                  start_index=0,
@@ -18,14 +18,16 @@ class TimeseriesGenerator_new(keras.utils.Sequence):
                  shuffle=False,
                  reverse=False,
                  batch_size=4):
-        self.data = data
+        
+        self.multi_sensor_data = multi_sensor_data
+        self.single_sensor_data = multi_sensor_data[0] #change this if different sensors give different dimentions of data
         self.targets = targets
         self.length = length
         self.sampling_rate = sampling_rate
         self.stride = stride
         self.start_index = start_index + length
         if end_index is None:
-            end_index = len(data) - 1
+            end_index = len(self.single_sensor_data) - 1
         self.end_index = end_index
         self.shuffle = shuffle
         self.reverse = reverse
@@ -33,7 +35,7 @@ class TimeseriesGenerator_new(keras.utils.Sequence):
         
         self.image_dimention = (160,320)
         self.n_channels = 3
-        self.n_cameras = 3
+        self.n_cameras = len(self.multi_sensor_data)
         
 
         if self.start_index > self.end_index:
@@ -48,11 +50,10 @@ class TimeseriesGenerator_new(keras.utils.Sequence):
 
     def _empty_batch(self, num_rows):
         samples_shape = [num_rows, self.length // self.sampling_rate, *self.image_dimention, self.n_channels]
-        samples_shape.extend(self.data.shape[1:])
+        samples_shape.extend(self.single_sensor_data.shape[1:])
         targets_shape = [num_rows]
         targets_shape.extend(self.targets.shape[1:]) 
 
-        multi_camera_samples_shape = [self.n_cameras, num_rows, self.length // self.sampling_rate, *self.image_dimention, self.n_channels]         
         return np.empty(samples_shape), np.empty(targets_shape)
 
     def __getitem__(self, index):
@@ -70,9 +71,9 @@ class TimeseriesGenerator_new(keras.utils.Sequence):
         #for camera in range(0,self.n_cameras):
         multi_camera_tensor = []
         
-        for camera in range(0,self.n_cameras):
+        for c, single_sensor_data in enumerate(self.multi_sensor_data):
             samples, targets = self._empty_batch(len(rows))
-            samples,targets = self.__getcameraTensor(rows,samples,targets)
+            samples,targets = self.__getcameraTensor(single_sensor_data, rows,samples,targets)
             multi_camera_tensor.append(samples)
         
         
@@ -84,10 +85,10 @@ class TimeseriesGenerator_new(keras.utils.Sequence):
     
      
             
-    def __getcameraTensor(self, rows, samples, targets):
+    def __getcameraTensor(self, single_sensor_data, rows, samples, targets):
         for j, row in enumerate(rows):
             indices = range(rows[j] - self.length, rows[j], self.sampling_rate)
-            file_names_time_series = self.data[list(indices)]  
+            file_names_time_series = single_sensor_data[list(indices)]  
             #print(*file_names_time_series)
             #get_images(c)             
             
@@ -163,33 +164,38 @@ params = {
 
 #from keras.preprocessing.sequence import TimeseriesGenerator
 import numpy as np
-test = TimeseriesGenerator_new(driving_log['center'], driving_log['steering'], **params)
+
+input_data = [driving_log['left'], driving_log['center'], driving_log['right']]
+test = TimeseriesGenerator_new(input_data, driving_log['steering'], **params)
 
 iterator = test.__iter__()
 
 batch = next(iterator)
 
-samples_batch = batch[0]
-labels_batch =  batch[1]
-'''
+multi_camera_samples_batch = batch[0]
+multi_camera_labels_batch =  batch[1]
 
-volume_shape = samples_batch.shape
-index = {'sample':0,'time':1,'height':2,'width':3,'channels':4}
+total_cameras = len(multi_camera_samples_batch)
 
-total_samples = volume_shape[index['sample']] 
-total_timesteps = volume_shape[index['time']]
-total_images = total_samples * total_timesteps                         
-
-
-plt.figure(figsize=(15, 3))
-
-image_count = 1
-for s, sample in enumerate(samples_batch):    
-    for t, timestep in enumerate(sample):
-
-        plt.subplot(total_samples, total_timesteps, image_count)
-        image_count = image_count + 1
-        plt.imshow(timestep)
-        plt.axis('off')
-plt.show()
-'''
+for camera in range(0,total_cameras):
+    samples_batch = multi_camera_samples_batch[camera]
+    
+    volume_shape = samples_batch.shape
+    index = {'sample':0,'time':1,'height':2,'width':3,'channels':4}
+    
+    total_samples = volume_shape[index['sample']] 
+    total_timesteps = volume_shape[index['time']]
+    total_images = total_samples * total_timesteps                         
+    
+    
+    plt.figure(figsize=(15, 3))
+    
+    image_count = 1
+    for s, sample in enumerate(samples_batch):    
+        for t, timestep in enumerate(sample):
+    
+            plt.subplot(total_samples, total_timesteps, image_count)
+            image_count = image_count + 1
+            plt.imshow(timestep)
+            plt.axis('off')
+    plt.show()

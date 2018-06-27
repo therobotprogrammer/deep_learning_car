@@ -33,6 +33,7 @@ class TimeseriesGenerator_new(keras.utils.Sequence):
         
         self.image_dimention = (160,320)
         self.n_channels = 3
+        self.n_cameras = 3
         
 
         if self.start_index > self.end_index:
@@ -49,7 +50,9 @@ class TimeseriesGenerator_new(keras.utils.Sequence):
         samples_shape = [num_rows, self.length // self.sampling_rate, *self.image_dimention, self.n_channels]
         samples_shape.extend(self.data.shape[1:])
         targets_shape = [num_rows]
-        targets_shape.extend(self.targets.shape[1:])            
+        targets_shape.extend(self.targets.shape[1:]) 
+
+        multi_camera_samples_shape = [self.n_cameras, num_rows, self.length // self.sampling_rate, *self.image_dimention, self.n_channels]         
         return np.empty(samples_shape), np.empty(targets_shape)
 
     def __getitem__(self, index):
@@ -64,8 +67,24 @@ class TimeseriesGenerator_new(keras.utils.Sequence):
         samples, targets = self._empty_batch(len(rows))
         
         
+        #for camera in range(0,self.n_cameras):
+        multi_camera_tensor = []
+        
+        for camera in range(0,self.n_cameras):
+            samples, targets = self._empty_batch(len(rows))
+            samples,targets = self.__getcameraTensor(rows,samples,targets)
+            multi_camera_tensor.append(samples)
         
         
+            
+            
+            
+
+        return multi_camera_tensor, targets
+    
+     
+            
+    def __getcameraTensor(self, rows, samples, targets):
         for j, row in enumerate(rows):
             indices = range(rows[j] - self.length, rows[j], self.sampling_rate)
             file_names_time_series = self.data[list(indices)]  
@@ -75,16 +94,11 @@ class TimeseriesGenerator_new(keras.utils.Sequence):
             for t, file_at_timestep in enumerate(file_names_time_series): #we did not use time 0 to t because length will be different if we skip frames
                 samples[j, t] = resize(imread(file_at_timestep), self.image_dimention)
                 #print(t,file_at_timestep)
-                
-
             targets[j] = self.targets[rows[j]]
             
         if self.reverse:
             return samples[:, ::-1, ...], targets
-        return samples, targets
-    
-     
-            
+        return samples, targets    
             
 
     
@@ -157,7 +171,7 @@ batch = next(iterator)
 
 samples_batch = batch[0]
 labels_batch =  batch[1]
-
+'''
 
 volume_shape = samples_batch.shape
 index = {'sample':0,'time':1,'height':2,'width':3,'channels':4}
@@ -178,3 +192,4 @@ for s, sample in enumerate(samples_batch):
         plt.imshow(timestep)
         plt.axis('off')
 plt.show()
+'''

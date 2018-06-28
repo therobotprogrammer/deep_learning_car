@@ -10,32 +10,35 @@ from matplotlib import pyplot as plt
 
 class TimeseriesGenerator_new(keras.utils.Sequence):
 
-    def __init__(self, multi_sensor_data, targets, length,
+    def __init__(self, multi_sensor_data, targets, 
+                 length,
                  sampling_rate=1,
                  stride=1,
                  start_index=0,
                  end_index=None,
                  shuffle=False,
                  reverse=False,
-                 batch_size=4):
+                 batch_size=16,
+                 image_dimention = (160,320),
+                 n_channels = 3):
         
         self.multi_sensor_data = multi_sensor_data
-        self.single_sensor_data = multi_sensor_data[0] #change this if different sensors give different dimentions of data
+        self.single_sensor_data_sample = multi_sensor_data[0] #change this if different sensors give different dimentions of data
         self.targets = targets
         self.length = length
         self.sampling_rate = sampling_rate
         self.stride = stride
         self.start_index = start_index + length
         if end_index is None:
-            end_index = len(self.single_sensor_data) - 1
+            end_index = len(self.single_sensor_data_sample) - 1
         self.end_index = end_index
         self.shuffle = shuffle
         self.reverse = reverse
         self.batch_size = batch_size
         
-        self.image_dimention = (160,320)
-        self.n_channels = 3
-        self.n_cameras = len(self.multi_sensor_data)
+        self.image_dimention = image_dimention
+        self.n_channels = n_channels
+        self.n_sensors = len(self.multi_sensor_data)
         
 
         if self.start_index > self.end_index:
@@ -50,10 +53,9 @@ class TimeseriesGenerator_new(keras.utils.Sequence):
 
     def _empty_batch(self, num_rows):
         samples_shape = [num_rows, self.length // self.sampling_rate, *self.image_dimention, self.n_channels]
-        samples_shape.extend(self.single_sensor_data.shape[1:])
+        samples_shape.extend(self.single_sensor_data_sample.shape[1:])
         targets_shape = [num_rows]
         targets_shape.extend(self.targets.shape[1:]) 
-
         return np.empty(samples_shape), np.empty(targets_shape)
 
     def __getitem__(self, index):
@@ -65,41 +67,48 @@ class TimeseriesGenerator_new(keras.utils.Sequence):
             rows = np.arange(i, min(i + self.batch_size *
                                     self.stride, self.end_index + 1), self.stride)
 
-        samples, targets = self._empty_batch(len(rows))
-        
-        
-        #for camera in range(0,self.n_cameras):
         multi_camera_tensor = []
         
-        for c, single_sensor_data in enumerate(self.multi_sensor_data):
-            samples, targets = self._empty_batch(len(rows))
-            samples,targets = self.__getcameraTensor(single_sensor_data, rows,samples,targets)
+        for sensor_index in range(0,self.n_sensors):
+            samples,targets = self.__getcameraTensor(sensor_index, rows) # is this bad programming? - to do: code review
             multi_camera_tensor.append(samples)
         
-        
-            
-            
-            
-
         return multi_camera_tensor, targets
     
      
             
-    def __getcameraTensor(self, single_sensor_data, rows, samples, targets):
+    def __getcameraTensor(self, sensor_index, rows):       
+        single_sensor_data = self.multi_sensor_data[sensor_index]
+        single_sensor_targets = self.targets
+        
+        single_sensor_samples_batch, single_sensor_targets_batch = self._empty_batch(len(rows))       
+        
         for j, row in enumerate(rows):
-            indices = range(rows[j] - self.length, rows[j], self.sampling_rate)
-            file_names_time_series = single_sensor_data[list(indices)]  
-            #print(*file_names_time_series)
-            #get_images(c)             
+            #Note: Be careful of off-by-one errors with rows. 
             
-            for t, file_at_timestep in enumerate(file_names_time_series): #we did not use time 0 to t because length will be different if we skip frames
-                samples[j, t] = resize(imread(file_at_timestep), self.image_dimention)
-                #print(t,file_at_timestep)
-            targets[j] = self.targets[rows[j]]
+            #indices are for timestamps
+            indices_consecutive_timesteps = range(rows[j] - self.length, rows[j], self.sampling_rate)
+            file_names_consecutive_timesteps = single_sensor_data[list(indices_consecutive_timesteps)]    
             
+            
+            for t, file_at_timestep in enumerate(file_names_consecutive_timesteps): #we did not use time 0 to t because length will be different if we skip frames
+                single_sensor_samples_batch[j, t] = resize(imread(file_at_timestep), self.image_dimention)
+                
+            
+            if self.reverse:
+                #This will give steering corresponding to first timestep for timestaps 0 to 9.                 
+                #single_sensor_targets[indices_consecutive_timesteps[0]] ## To Do: code review
+                single_sensor_targets_batch[j] = single_sensor_targets[row-1 - t] 
+            else:
+                #This will give steering corresponding to last timestep for timestaps 0 to 9.
+                # here we want the last element
+                 #single_sensor_targets[indices_consecutive_timesteps[-1]] ## To Do: code review
+                single_sensor_targets_batch[j] = single_sensor_targets[row-1]
+               
+                
         if self.reverse:
-            return samples[:, ::-1, ...], targets
-        return samples, targets    
+            return single_sensor_samples_batch[:, ::-1, ...], single_sensor_targets_batch
+        return single_sensor_samples_batch, single_sensor_targets_batch    
             
 
     
@@ -109,6 +118,7 @@ def strip_filenames(old_path):
     directory, filename = os.path.split(filename) #handles linux generated files
     return("/" + filename) 
     
+
 
 def update_driving_log(data_dir, driving_log_csv = None, ralative_path = False):  
     if driving_log_csv == None:
@@ -120,50 +130,67 @@ def update_driving_log(data_dir, driving_log_csv = None, ralative_path = False):
     
     driving_log_pd = pd.read_csv(driving_log_csv, header= None)
     driving_log_pd_temp = driving_log_pd.iloc[:,0:3]    
-    driving_log_pd_temp = driving_log_pd_temp.applymap(strip_filenames)
-    
+    driving_log_pd_temp = driving_log_pd_temp.applymap(strip_filenames)    
     driving_log_pd_temp = new_image_path + driving_log_pd_temp.astype(str)    
-    driving_log_pd.iloc[:,0:3] = driving_log_pd_temp      
-    
+    driving_log_pd.iloc[:,0:3] = driving_log_pd_temp          
     driving_log_pd.to_csv(driving_log_csv, index = False, header = False)    
-    
-    driving_log_pd.columns = ['center','left', 'right', 'x','y','z','steering']    
-    
+    driving_log_pd.columns = ['center','left', 'right', 'x','y','z','steering']       
+
     return driving_log_pd
 
 
+
+def show_batch(batch, figsize=(15, 3)):
+    multi_camera_samples_batch = batch[0]
+    multi_camera_labels_batch =  batch[1]    
+    total_cameras = len(multi_camera_samples_batch)
+    
+    for camera in range(0,total_cameras):
+        samples_batch = multi_camera_samples_batch[camera]        
+        volume_shape = samples_batch.shape
+        
+        index = {'sample':0,'time':1,'height':2,'width':3,'channels':4}        
+        
+        total_samples = volume_shape[index['sample']] 
+        total_timesteps = volume_shape[index['time']]        
+        
+        plt.figure(figsize=figsize)        
+        image_count = 1
+        
+        for s, sample in enumerate(samples_batch):    
+            for t, timestep in enumerate(sample):        
+                plt.subplot(total_samples, total_timesteps, image_count)
+                image_count = image_count + 1
+                plt.imshow(timestep)
+                plt.axis('off')
+        plt.show()
+
+    
+    print('\nLabels Batch')
+    
+    for label in multi_camera_labels_batch:
+        print(label)
+        
 
 
 ##########################################################################
     
 data_dir = '/home/pt/Desktop/debug_data'
 driving_log_csv = data_dir + '/' + 'driving_log.csv'
-
-
 driving_log = update_driving_log(data_dir, driving_log_csv)
 
-
-batch_size = 16
-
-'''
 params = {
-          'image_dimention': (160,320),
-          'batch_size': 16,
-          'n_channels': 3,
-          'shuffle': True,
-          'length': 0
+             'length' : 10,
+             'sampling_rate':1,
+             'stride':1,
+             'start_index':0,
+             'end_index':None,
+             'shuffle':False,
+             'reverse':False,
+             'batch_size':5,
+             'image_dimention' : (160,320),
+             'n_channels' : 3
          }
-'''
-
-#test = DataGenerator(driving_log['center'], driving_log['steering'], **params)
-
-params = {
-            'length': 10
-         }
-
-
-#from keras.preprocessing.sequence import TimeseriesGenerator
-import numpy as np
 
 input_data = [driving_log['left'], driving_log['center'], driving_log['right']]
 test = TimeseriesGenerator_new(input_data, driving_log['steering'], **params)
@@ -172,30 +199,5 @@ iterator = test.__iter__()
 
 batch = next(iterator)
 
-multi_camera_samples_batch = batch[0]
-multi_camera_labels_batch =  batch[1]
+show_batch(batch, figsize = (20,4))
 
-total_cameras = len(multi_camera_samples_batch)
-
-for camera in range(0,total_cameras):
-    samples_batch = multi_camera_samples_batch[camera]
-    
-    volume_shape = samples_batch.shape
-    index = {'sample':0,'time':1,'height':2,'width':3,'channels':4}
-    
-    total_samples = volume_shape[index['sample']] 
-    total_timesteps = volume_shape[index['time']]
-    total_images = total_samples * total_timesteps                         
-    
-    
-    plt.figure(figsize=(15, 3))
-    
-    image_count = 1
-    for s, sample in enumerate(samples_batch):    
-        for t, timestep in enumerate(sample):
-    
-            plt.subplot(total_samples, total_timesteps, image_count)
-            image_count = image_count + 1
-            plt.imshow(timestep)
-            plt.axis('off')
-    plt.show()

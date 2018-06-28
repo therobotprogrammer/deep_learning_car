@@ -56,11 +56,14 @@ for f in filenames:
         driving_log_pd.loc[file_index, 'center'] = full_file_path
         
     elif camera == 'R':
-        driving_log_pd.loc[file_index, 'right'] = full_file_path
-        
+        driving_log_pd.loc[file_index, 'right'] = full_file_path       
+    
     else:
         print('error')
         break
+    
+    driving_log_pd.loc[file_index, 'steering'] = file_index
+
     
 driving_log_pd = driving_log_pd[0:max_index]
 driving_log_pd.to_csv(driving_log_csv, index = False, header = False)    

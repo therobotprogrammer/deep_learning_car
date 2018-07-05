@@ -8,7 +8,7 @@ import cv2
 from matplotlib import pyplot as plt
 
 
-class TimeseriesGenerator_new(keras.utils.Sequence):
+class MultiSensorTimeSeriesGenerator(keras.utils.Sequence):
 
     def __init__(self, multi_sensor_data, targets, 
                  length,
@@ -111,7 +111,7 @@ class TimeseriesGenerator_new(keras.utils.Sequence):
         return single_sensor_samples_batch, single_sensor_targets_batch    
             
 
-    
+'''   
 def strip_filenames(old_path):
     old_path = old_path.split("\\") #handles windows generated files
     *directory, filename = old_path        
@@ -174,7 +174,7 @@ def show_batch(batch, figsize=(15, 3)):
 
 
 ##########################################################################
-    
+
 data_dir = '/home/pt/Desktop/debug_data'
 driving_log_csv = data_dir + '/' + 'driving_log.csv'
 driving_log = update_driving_log(data_dir, driving_log_csv)
@@ -193,7 +193,7 @@ params = {
          }
 
 input_data = [driving_log['left'], driving_log['center'], driving_log['right']]
-test = TimeseriesGenerator_new(input_data, driving_log['steering'], **params)
+test = MultiSensorTimeSeriesGenerator(input_data, driving_log['steering'], **params)
 
 iterator = test.__iter__()
 
@@ -201,3 +201,4 @@ batch = next(iterator)
 
 show_batch(batch, figsize = (20,4))
 
+'''

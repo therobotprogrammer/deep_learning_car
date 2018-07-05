@@ -1,0 +1,42 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Jul  5 09:30:45 2018
+
+@author: pt
+"""
+import sys
+
+
+utils_dir = '/home/pt/repository/deep_learning_car/utils'
+sys.path.insert(0, utils_dir)
+from custom_utils import custom_utils
+from MultiSensorTimeSeriesGenerator import MultiSensorTimeSeriesGenerator
+
+
+
+data_dir = '/home/pt/Desktop/debug_data'
+driving_log_csv = data_dir + '/' + 'driving_log.csv'
+driving_log = update_driving_log(data_dir, driving_log_csv)
+
+params = {
+             'length' : 10,
+             'sampling_rate':1,
+             'stride':1,
+             'start_index':0,
+             'end_index':None,
+             'shuffle':False,
+             'reverse':False,
+             'batch_size':5,
+             'image_dimention' : (160,320),
+             'n_channels' : 3
+         }
+
+input_data = [driving_log['left'], driving_log['center'], driving_log['right']]
+test = MultiSensorTimeSeriesGenerator(input_data, driving_log['steering'], **params)
+
+iterator = test.__iter__()
+
+batch = next(iterator)
+
+show_batch(batch, figsize = (20,4))

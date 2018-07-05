@@ -10,14 +10,14 @@ import sys
 
 utils_dir = '/home/pt/repository/deep_learning_car/utils'
 sys.path.insert(0, utils_dir)
-from custom_utils import custom_utils
+import custom_utils as custom_utils
 from MultiSensorTimeSeriesGenerator import MultiSensorTimeSeriesGenerator
 
 
 
 data_dir = '/home/pt/Desktop/debug_data'
 driving_log_csv = data_dir + '/' + 'driving_log.csv'
-driving_log = update_driving_log(data_dir, driving_log_csv)
+driving_log = custom_utils.update_driving_log(data_dir, driving_log_csv)
 
 params = {
              'length' : 10,
@@ -39,4 +39,4 @@ iterator = test.__iter__()
 
 batch = next(iterator)
 
-show_batch(batch, figsize = (20,4))
+custom_utils.show_batch(batch, figsize = (20,4))

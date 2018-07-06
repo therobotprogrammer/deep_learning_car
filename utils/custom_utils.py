@@ -46,19 +46,29 @@ def update_driving_log(data_dir, driving_log_csv = None, relative_path = False):
 
 
 
-def show_batch(batch, figsize=(15, 3)):
+def show_batch(batch, batch_generator_params, figsize=(20, 5)):
     multi_camera_samples_batch = batch[0]
     multi_camera_labels_batch =  batch[1]    
     total_cameras = len(multi_camera_samples_batch)
     
+    index = {'sample':0,'time':1,'height':2,'width':3,'channels':4}        
+
+    if batch_generator_params['time_axis'] == False:
+        total_timesteps = 1
+        figsize = (figsize[0]*3, figsize[1]*3 )
+        
     for camera in range(0,total_cameras):
         samples_batch = multi_camera_samples_batch[camera]        
-        volume_shape = samples_batch.shape
+        volume_shape = samples_batch.shape        
         
-        index = {'sample':0,'time':1,'height':2,'width':3,'channels':4}        
+        if batch_generator_params['time_axis'] == False:
+           assert batch_generator_params['length'] == 1, 'Time axis is False but time series length is not 1' 
+           samples_batch = np.expand_dims(samples_batch, axis = 1)   
+        else:
+           total_timesteps = volume_shape[index['time']]   
         
-        total_samples = volume_shape[index['sample']] 
-        total_timesteps = volume_shape[index['time']]        
+        total_samples = volume_shape[index['sample']]          
+
         
         plt.figure(figsize=figsize)        
         image_count = 1

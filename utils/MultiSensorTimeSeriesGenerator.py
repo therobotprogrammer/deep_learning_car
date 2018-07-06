@@ -20,7 +20,8 @@ class MultiSensorTimeSeriesGenerator(keras.utils.Sequence):
                  reverse=False,
                  batch_size=16,
                  image_dimention = (160,320),
-                 n_channels = 3):
+                 n_channels = 3,
+                 time_axis = True):
         
         self.multi_sensor_data = multi_sensor_data
         self.single_sensor_data_sample = multi_sensor_data[0] #change this if different sensors give different dimentions of data
@@ -38,8 +39,8 @@ class MultiSensorTimeSeriesGenerator(keras.utils.Sequence):
         
         self.image_dimention = image_dimention
         self.n_channels = n_channels
-        self.n_sensors = len(self.multi_sensor_data)
-        
+        self.n_sensors = len(self.multi_sensor_data)        
+        self.time_axis = time_axis
 
         if self.start_index > self.end_index:
             raise ValueError('`start_index+length=%i > end_index=%i` '
@@ -107,11 +108,26 @@ class MultiSensorTimeSeriesGenerator(keras.utils.Sequence):
                
                 
         if self.reverse:
-            return single_sensor_samples_batch[:, ::-1, ...], single_sensor_targets_batch
-        return single_sensor_samples_batch, single_sensor_targets_batch    
+            single_sensor_samples_batch = single_sensor_samples_batch[:, ::-1, ...]
+        
+        #if non time series data is needed. This will work as a normal generator
+        if self.time_axis == False:
+            assert self.length == 1, 'Time axis is False but time series length is not 1'
+            #Drop the time axis            
+            single_sensor_samples_batch = np.squeeze(single_sensor_samples_batch, axis=1)
             
+        return single_sensor_samples_batch, single_sensor_targets_batch    
+ 
 
-'''   
+
+
+
+
+
+
+           
+
+   
 def strip_filenames(old_path):
     old_path = old_path.split("\\") #handles windows generated files
     *directory, filename = old_path        
@@ -139,15 +155,19 @@ def update_driving_log(data_dir, driving_log_csv = None, ralative_path = False):
     return driving_log_pd
 
 
+'''
 
-def show_batch(batch, figsize=(15, 3)):
+def show_batch(batch, figsize=(15, 3), time_axis = False):
     multi_camera_samples_batch = batch[0]
     multi_camera_labels_batch =  batch[1]    
     total_cameras = len(multi_camera_samples_batch)
     
     for camera in range(0,total_cameras):
         samples_batch = multi_camera_samples_batch[camera]        
-        volume_shape = samples_batch.shape
+        volume_shape = samples_batch.shape        
+        
+        if time_axis == False:
+           samples_batch = np.expand_dims(samples_batch, axis = 1) 
         
         index = {'sample':0,'time':1,'height':2,'width':3,'channels':4}        
         
@@ -170,7 +190,6 @@ def show_batch(batch, figsize=(15, 3)):
     
     for label in multi_camera_labels_batch:
         print(label)
-        
 
 
 ##########################################################################
@@ -180,7 +199,7 @@ driving_log_csv = data_dir + '/' + 'driving_log.csv'
 driving_log = update_driving_log(data_dir, driving_log_csv)
 
 params = {
-             'length' : 10,
+             'length' : 1,
              'sampling_rate':1,
              'stride':1,
              'start_index':0,
@@ -189,7 +208,8 @@ params = {
              'reverse':False,
              'batch_size':5,
              'image_dimention' : (160,320),
-             'n_channels' : 3
+             'n_channels' : 3,
+             'time_axis':False
          }
 
 input_data = [driving_log['left'], driving_log['center'], driving_log['right']]
@@ -199,6 +219,8 @@ iterator = test.__iter__()
 
 batch = next(iterator)
 
-show_batch(batch, figsize = (20,4))
+params['time_axis']
+
+show_batch(batch,  figsize = (400,4) , time_axis = False )
 
 '''

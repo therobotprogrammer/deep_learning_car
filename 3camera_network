@@ -5,6 +5,14 @@ Created on Thu Jul  5 09:30:45 2018
 
 @author: pt
 """
+from keras.models import Model
+from keras.layers import Input,Dense, Lambda, concatenate, SeparableConv1D, MaxPooling1D, Dropout, Conv2D, Flatten
+from IPython.display import SVG
+from keras.utils.vis_utils import model_to_dot
+from keras.utils import plot_model
+from sklearn.model_selection import train_test_split #to split out training and testing data 
+
+
 import sys
 
 
@@ -14,13 +22,92 @@ import custom_utils as custom_utils
 from MultiSensorTimeSeriesGenerator import MultiSensorTimeSeriesGenerator
 
 
+def show_sample_from_generator(generator, batch_generator_params):
+    generator = train_generator
+    iterator = generator.__iter__()
+    batch = next(iterator)
+    custom_utils.show_batch(batch, batch_generator_params, figsize=(15, 3))
 
-data_dir = '/home/pt/Desktop/debug_data'
-driving_log_csv = data_dir + '/' + 'driving_log.csv'
-driving_log = custom_utils.update_driving_log(data_dir, driving_log_csv)
 
-params = {
-             'length' : 10,
+#Q Why this notmalisation
+def image_normalization(x):
+    return ( (x/127.5) - 1.0 )
+    
+#To Do: Verify if Lambda is correctly used
+def build_single_sensor_network(sensor_input):    
+    x = Lambda(image_normalization)(sensor_input)
+    #x = Dense(32)(x)
+    return x
+
+def show_model(model):
+    display(SVG(model_to_dot(model, show_shapes=True).create(prog='dot', format='svg')))
+
+
+
+def build_nvidia_paper_model(sensor_count, single_sensor_input_shape):
+    
+    sensor_inputs = []
+    sensor_outputs = []
+    
+    
+    for sensor_id in range(0, sensor_count):
+        #Q Will it if we make input_sensor = Input() and then appent list.append(input_sensor) 3 times. will it be same data or different for eact sensor?
+        #Q How to do this as an array?
+        
+        single_sensor_input = Input(shape=single_sensor_input_shape)
+        single_sensor_output = build_single_sensor_network(single_sensor_input)
+        
+        sensor_inputs.append(single_sensor_input)        
+        sensor_outputs.append(single_sensor_output)
+        
+
+    x = concatenate(sensor_outputs)
+    x = Conv2D(24, (5,5), strides=(2,2), activation='elu')(x)
+    x = Conv2D(36, (5,5), strides=(2,2), activation='elu')(x)
+    x = Conv2D(48, (5,5), strides=(2,2), activation='elu')(x)
+    x = Conv2D(64, (3,3), strides=(1,1), activation='elu')(x)
+    x = Conv2D(64, (3,3), strides=(1,1), activation='elu')(x)
+    x = Dropout(.5)(x)
+    x = Flatten()(x)
+    x = Dense(100, activation = 'elu')(x)
+    x = Dense(50, activation = 'elu')(x)
+    x = Dense(10, activation = 'elu')(x)
+    x = Dense(1, activation = 'elu')(x)
+    
+    
+    #x = SeparableConv1D(5,1)(x)
+
+
+
+    model = Model(inputs = sensor_inputs, outputs = x)
+    model.summary()   
+    show_model(model)
+    
+    return model
+    
+
+
+def get_sensor_count_and_input_shape(sample_generator):
+    iterator = sample_generator.__iter__()    
+      
+    batch = next(iterator)
+    input_data = batch[0]   
+    
+    sensor_count = len(input_data)    
+    single_sensor_input_shape = input_data[0][0].shape
+    
+    return sensor_count, single_sensor_input_shape
+    
+
+#def train_model(model):
+    
+model_params = {
+            'train_to_test_split_ratio' : .8,
+            'random_seed' : 0
+        }
+
+batch_generator_params = {
+             'length' : 1,
              'sampling_rate':1,
              'stride':1,
              'start_index':0,
@@ -29,14 +116,58 @@ params = {
              'reverse':False,
              'batch_size':5,
              'image_dimention' : (160,320),
-             'n_channels' : 3
+             'n_channels' : 3,
+             'time_axis':False
          }
 
-input_data = [driving_log['left'], driving_log['center'], driving_log['right']]
-test = MultiSensorTimeSeriesGenerator(input_data, driving_log['steering'], **params)
 
-iterator = test.__iter__()
 
-batch = next(iterator)
+data_dir = '/home/pt/Desktop/debug_data'
+driving_log_csv = data_dir + '/' + 'driving_log.csv'
+driving_log = custom_utils.update_driving_log(data_dir, driving_log_csv)
 
-custom_utils.show_batch(batch, figsize = (20,4))
+split_point = int(len(driving_log) * model_params['train_to_test_split_ratio'])
+driving_log_train = driving_log[0:split_point]
+driving_log_validation = driving_log[split_point + batch_generator_params['length'] * 2:] # length*2 so that car has moved far away from train data spot
+
+#if we done reset index, then test data has index split_point onwards. This will cause problem with timeseriesgenerator
+driving_log_train.reset_index()
+driving_log_validation.reset_index() 
+
+
+train_generator = MultiSensorTimeSeriesGenerator([driving_log_train['center'], driving_log_train['left'], driving_log_train['right']], driving_log_train['steering'], **batch_generator_params)
+validation_generator = MultiSensorTimeSeriesGenerator([driving_log_validation['center'], driving_log_validation['left'], driving_log_validation['right']], driving_log_validation['steering'], **batch_generator_params)
+
+show_sample_from_generator(train_generator, batch_generator_params)
+
+sensor_count, input_shape = get_sensor_count_and_input_shape(train_generator)
+#model = build_nvidia_paper_model(sensor_count, input_shape)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+'''
+
+all_input_data = driving_log[['center','left','right']]
+all_output_data = driving_log['steering']
+
+X_train_input_data, X_validation_input_data, y_train_output_data, y_validation_output_data = train_test_split(all_input_data, all_output_data, test_size = model_params['test_to_train_split_ratio'], random_state = model_params['random_seed'])
+
+
+X_train_input_data = list([X_train_input_data['center'], X_train_input_data['left'], X_train_input_data['right']])
+X_validation_input_data = list([X_validation_input_data['center'], X_validation_input_data['left'], X_validation_input_data['right']])
+'''

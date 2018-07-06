@@ -11,6 +11,10 @@ from IPython.display import SVG
 from keras.utils.vis_utils import model_to_dot
 from keras.utils import plot_model
 from sklearn.model_selection import train_test_split #to split out training and testing data 
+from keras.callbacks import ModelCheckpoint, EarlyStopping
+from keras.optimizers import Adam
+
+import os
 
 
 import sys
@@ -100,10 +104,26 @@ def get_sensor_count_and_input_shape(sample_generator):
     
 
 #def train_model(model):
-    
+######################################################################
+
+google_drive = '/home/pt/Desktop/debug_data'
+
+### Model save location ###
+model_save_directory = google_drive + '/nvidia_car_paper'
+if not os.path.isdir(model_save_directory):
+  os.mkdir(model_save_directory)
+
+model_save_file = model_save_directory + '/' + 'model.h5'
+###########################
+
+
+
+
+
 model_params = {
             'train_to_test_split_ratio' : .8,
-            'random_seed' : 0
+            'random_seed' : 0,
+            'learning_rate': 1.0e-4
         }
 
 batch_generator_params = {
@@ -141,15 +161,13 @@ validation_generator = MultiSensorTimeSeriesGenerator([driving_log_validation['c
 show_sample_from_generator(train_generator, batch_generator_params)
 
 sensor_count, input_shape = get_sensor_count_and_input_shape(train_generator)
-#model = build_nvidia_paper_model(sensor_count, input_shape)
+model = build_nvidia_paper_model(sensor_count, input_shape)
 
+save_weights = ModelCheckpoint(model_save_file, monitor='val_loss', save_best_only=True, mode='auto')
 
+model.compile(optimizer= Adam(lr=model_params['learning_rate']), loss='mean_squared_error')
 
-
-
-
-
-
+model.fit_generator(generator=train_generator, validation_data = validation_generator, use_multiprocessing = True, workers=4 )
 
 
 

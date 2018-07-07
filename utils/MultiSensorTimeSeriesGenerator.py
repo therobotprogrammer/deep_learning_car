@@ -93,7 +93,7 @@ class MultiSensorTimeSeriesGenerator(keras.utils.Sequence):
             
             
             for t, file_at_timestep in enumerate(file_names_consecutive_timesteps): #we did not use time 0 to t because length will be different if we skip frames
-                single_sensor_samples_batch[j, t] = resize(imread(file_at_timestep), self.image_dimention)
+                single_sensor_samples_batch[j, t] = resize(imread(file_at_timestep), self.image_dimention, mode='constant')
                 
             
             if self.reverse:

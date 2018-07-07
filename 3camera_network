@@ -113,7 +113,7 @@ model_save_directory = google_drive + '/nvidia_car_paper'
 if not os.path.isdir(model_save_directory):
   os.mkdir(model_save_directory)
 
-model_save_file = model_save_directory + '/' + 'model.h5'
+model_save_file = model_save_directory + '/' + 'model-{epoch:03d}.h5'
 ###########################
 
 
@@ -151,8 +151,8 @@ driving_log_train = driving_log[0:split_point]
 driving_log_validation = driving_log[split_point + batch_generator_params['length'] * 2:] # length*2 so that car has moved far away from train data spot
 
 #if we done reset index, then test data has index split_point onwards. This will cause problem with timeseriesgenerator
-driving_log_train.reset_index()
-driving_log_validation.reset_index() 
+driving_log_train = driving_log_train.reset_index()
+driving_log_validation = driving_log_validation.reset_index() 
 
 
 train_generator = MultiSensorTimeSeriesGenerator([driving_log_train['center'], driving_log_train['left'], driving_log_train['right']], driving_log_train['steering'], **batch_generator_params)
@@ -169,12 +169,23 @@ model.compile(optimizer= Adam(lr=model_params['learning_rate']), loss='mean_squa
 
 model.fit_generator(generator=train_generator, validation_data = validation_generator, use_multiprocessing = True, workers=4 )
 
+#model.fit_generator(generator=train_generator, validation_data = validation_generator)
 
 
+'''
+    iterator = generator.__iter__()
+    batch = next(iterator)
+    custom_utils.show_batch(batch, batch_generator_params, figsize=(15, 3))
 
 
+generator = validation_generator
+iterator = generator.__iter__()
 
-
+while(1):
+    batch = next(iterator)
+    custom_utils.show_batch(batch, batch_generator_params, figsize=(15, 3))
+    
+'''    
 
 
 

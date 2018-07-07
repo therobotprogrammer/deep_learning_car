@@ -32,16 +32,19 @@ def update_driving_log(data_dir, driving_log_csv = None, relative_path = False):
         
     new_image_path = ''
     if relative_path == False:
-        new_image_path = data_dir + '/IMG'
+        new_image_path = data_dir + '/IMG'    
     
-    driving_log_pd = pd.read_csv(driving_log_csv, header= None)
+    driving_log_pd = pd.read_csv(driving_log_csv, header= None)  
+    if driving_log_pd.iloc[0,0] == 'center':
+       driving_log_pd = driving_log_pd.drop([0])
+    
     driving_log_pd_temp = driving_log_pd.iloc[:,0:3]    
     driving_log_pd_temp = driving_log_pd_temp.applymap(strip_filenames)    
     driving_log_pd_temp = new_image_path + driving_log_pd_temp.astype(str)    
-    driving_log_pd.iloc[:,0:3] = driving_log_pd_temp          
-    driving_log_pd.to_csv(driving_log_csv, index = False, header = False)    
-    driving_log_pd.columns = ['center','left', 'right', 'x','y','z','steering']       
-
+    driving_log_pd.iloc[:,0:3] = driving_log_pd_temp      
+    driving_log_pd.columns = ['center','left', 'right', 'steering','throttle','brake','speed']        
+    driving_log_pd.to_csv(driving_log_csv, index = False, header = True)   
+      
     return driving_log_pd
 
 

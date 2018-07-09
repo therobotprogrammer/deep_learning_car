@@ -11,7 +11,7 @@ from IPython.display import SVG
 from keras.utils.vis_utils import model_to_dot
 from keras.utils import plot_model
 from sklearn.model_selection import train_test_split #to split out training and testing data 
-from keras.callbacks import ModelCheckpoint, EarlyStopping
+from keras.callbacks import ModelCheckpoint, EarlyStopping, CSVLogger, TensorBoard
 from keras.optimizers import Adam
 
 import os
@@ -172,31 +172,26 @@ model.fit_generator(generator=train_generator, validation_data = validation_gene
 #model.fit_generator(generator=train_generator, validation_data = validation_generator)
 
 
-'''
-    iterator = generator.__iter__()
-    batch = next(iterator)
-    custom_utils.show_batch(batch, batch_generator_params, figsize=(15, 3))
-
-
-generator = validation_generator
-iterator = generator.__iter__()
-
-while(1):
-    batch = next(iterator)
-    custom_utils.show_batch(batch, batch_generator_params, figsize=(15, 3))
-    
-'''    
 
 
 
-'''
-
-all_input_data = driving_log[['center','left','right']]
-all_output_data = driving_log['steering']
-
-X_train_input_data, X_validation_input_data, y_train_output_data, y_validation_output_data = train_test_split(all_input_data, all_output_data, test_size = model_params['test_to_train_split_ratio'], random_state = model_params['random_seed'])
 
 
-X_train_input_data = list([X_train_input_data['center'], X_train_input_data['left'], X_train_input_data['right']])
-X_validation_input_data = list([X_validation_input_data['center'], X_validation_input_data['left'], X_validation_input_data['right']])
-'''
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

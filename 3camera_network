@@ -1,10 +1,4 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Thu Jul  5 09:30:45 2018
 
-@author: pt
-"""
 from keras.models import Model
 from keras.layers import Input,Dense, Lambda, concatenate, SeparableConv1D, MaxPooling1D, Dropout, Conv2D, Flatten
 from IPython.display import SVG
@@ -106,6 +100,8 @@ from model_load_and_save import model_load_and_save
 
 google_drive = '/home/pt/Desktop/temp'
 model_save_top_directory = google_drive + '/deep_learning/01_Self_Driving_Car_Nvidia_Paper/saved_models' 
+model_save_top_directory = '/home/pt/Desktop/saved_models/' 
+
 
 save_load_params = {
                             'continue_training_last_model' : True,
@@ -159,18 +155,23 @@ show_sample_from_generator(train_generator, batch_generator_params)
 
 sensor_count, input_shape = get_sensor_count_and_input_shape(train_generator)
 
-if not model_saver.continue_training_last_model:
-    model = build_nvidia_paper_model(sensor_count, input_shape)
-else:
-    model = model_saver.model
 
-show_model(model)
+if model_saver.continue_training_last_model and model_saver.model_loaded_sucessfully:
+    model = model_saver.model
+else:
+    model = build_nvidia_paper_model(sensor_count, input_shape)
+
+#show_model(model) 
 
 
 #callbacks
 save_weights = ModelCheckpoint(filepath=model_saver.model_save_file, monitor='val_loss', verbose =0, save_best_only=True, mode='auto')
 csv_logger = CSVLogger(model_saver.csv_save_file)
 tensorboard = TensorBoard(log_dir=model_saver.tensorboard_log_dir, histogram_freq=0, write_graph=True, write_images=True)
+callbacks = [save_weights, csv_logger, tensorboard]
+
+
+
 
 save_weights = ModelCheckpoint(model_saver.model_save_file, monitor='val_loss', save_best_only=True, mode='auto')
 

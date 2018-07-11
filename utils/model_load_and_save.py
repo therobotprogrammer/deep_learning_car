@@ -11,6 +11,7 @@ from glob import glob
 import pytz
 import datetime
 from keras.models import load_model
+import pandas as pd
 
     
 '''
@@ -33,14 +34,17 @@ class model_load_and_save:
         self.continue_training_last_model = continue_training_last_model 
         self.create_time_stamped_dirs = create_time_stamped_dirs
         self.local_timezone = local_timezone
-        self.model = None
+        self.model_loaded_sucessfully = False
+        self.initial_epoch = 0
 
         self.setup_paths()
 
         
         
     def setup_paths(self):
-                                   
+                  
+        self.model = None
+                 
         if os.path.isdir(self.model_save_top_directory):
             self.cleanup(self.model_save_top_directory)
         else:
@@ -52,13 +56,18 @@ class model_load_and_save:
         if self.continue_training_last_model == True:
           last_model_dir = self.getlastmodeldir(self.model_save_top_directory) #assumes sub dir names are appended with time strings
           if last_model_dir == None:
-            self.continue_training_last_model == False
+            self.continue_training_last_model = False
           else:
             model_save_directory = last_model_dir
             saved_model_filename = self.get_last_file(model_save_directory, file_type = 'h5')
+            saved_csv_save_file = self.get_last_file(model_save_directory, file_type = 'csv')
+
             if saved_model_filename != None:
                 try:    
-                    self.model = load_model(saved_model_filename)
+                    self.model = load_model(saved_model_filename)                    
+                    log_pd = pd.read_csv(saved_csv_save_file, header = 0)  
+                    self.initial_epoch = 1 + log_pd['epoch'].iloc[-1]                    
+                    self.model_loaded_sucessfully = True
                     print('>>> Previously saved model found. Training will continue from file: \n' + saved_model_filename) 
                 except OSError:
                     print('>>> Error loading saved model. A new model will be trained')
@@ -84,17 +93,13 @@ class model_load_and_save:
         self.model_save_file = model_save_directory + '/' + 'weights.{epoch:02d}-{val_loss:.2f}.hdf5'
         self.csv_save_file = model_save_directory + '/' + 'log.csv'
         self.tensorboard_log_dir = model_save_directory
-
-        
+       
         '''
         if not os.path.isdir(tensorboard_log_dir):
           os.makedirs(tensorboard_log_dir)
         '''
         
-
-      
-        
-     
+   
    
     def deep_cleanup(self, currentDir):
       index = 0

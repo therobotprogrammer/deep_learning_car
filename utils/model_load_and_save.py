@@ -8,8 +8,9 @@ Created on Mon Jul  9 15:55:49 2018
 
 import os
 from glob import glob
+import pytz
+import datetime
 from keras.models import load_model
-
 
     
 '''
@@ -27,58 +28,70 @@ model_save_top_directory = google_drive + '/deep_learning/01_Self_Driving_Car_Nv
 '''
 
 class model_load_and_save:
-    def __init__(self, model_save_top_directory, save_load_params):
-        model_load_and_save(model_save_top_directory, save_load_params)
-        
+    def __init__(self, model_save_top_directory, continue_training_last_model = True, create_time_stamped_dirs = True, local_timezone = 'Asia/Kolkata'):
+        self.model_save_top_directory = model_save_top_directory
+        self.continue_training_last_model = continue_training_last_model 
+        self.create_time_stamped_dirs = create_time_stamped_dirs
+        self.local_timezone = local_timezone
+        self.setup_paths()
+        self.model = None
 
-    def model_load_and_save(self, model_save_top_directory, save_load_params):
+        
+        
+    def setup_paths(self):
                                    
-        if os.path.isdir(model_save_top_directory):
-            cleanup(model_save_top_directory)
+        if os.path.isdir(self.model_save_top_directory):
+            self.cleanup(self.model_save_top_directory)
         else:
-            os.mkdir(model_save_top_directory)
+            os.makedirs(self.model_save_top_directory)
 
+
+        model_save_directory = self.model_save_top_directory
         
-        if save_load_params[continue_training_last_model] == True:
-          last_model_dir = getlastmodeldir(model_save_top_directory) #assumes sub dir names are appended with time strings
+        if self.continue_training_last_model == True:
+          last_model_dir = self.getlastmodeldir(self.model_save_top_directory) #assumes sub dir names are appended with time strings
           if last_model_dir == None:
-            save_load_params[continue_training_last_model] == False
+            self.continue_training_last_model == False
           else:
             model_save_directory = last_model_dir
-            saved_model = get_last_file(model_save_directory, file_type = 'h5')
-            if saved_model != None:        
-                print('>>> Previously saved model found. Training will continue from file: \n' + saved_model) 
+            saved_model_filename = self.get_last_file(model_save_directory, file_type = 'h5')
+            if saved_model_filename != None:
+                try:    
+                    self.model = load_model(saved_model_filename)
+                    print('>>> Previously saved model found. Training will continue from file: \n' + saved_model_filename) 
+                except OSError:
+                    print('>>> Error loading saved model. A new model will be trained')
+
             else:
                 print('>>> No saved models found. A new model will be trained')
-                save_load_params[continue_training_last_model] = False  
+                self.continue_training_last_model = False  
             
-        if save_load_params[continue_training_last_model] == False:
-            if save_load_params[create_time_stamped_directories]:
-                model_save_directory =  model_save_top_directory + '/' + auto_dl.get_time_string()
+        if self.continue_training_last_model == False:
+            if self.create_time_stamped_dirs:
+                model_save_directory =  self.model_save_top_directory + '/' + self.get_time_string()
             else:
-                model_save_directory = model_save_top_directory + '/default_model'
+                model_save_directory = self.model_save_top_directory + '/default_model'
         
-          if os.path.isdir(model_save_directory):
-            print('Model directory emptied. It was created in the last minute hence emptied. ')
-            os.rmdir(model_save_directory)
-          os.makedirs(model_save_directory)
-          print('Created directory for this experiment: ' + model_save_directory)
-          #model_save_file = model_save_directory + '/' + 'model-{epoch:03d}.h5'
+            if os.path.isdir(model_save_directory):
+                print('Model directory emptied for new experiment. It was created in the last minute or continue training was false. ')
+                os.rmdir(model_save_directory)
+                
+            os.makedirs(model_save_directory)
+            print('Created directory for this experiment: ' + model_save_directory)
+            #model_save_file = model_save_directory + '/' + 'model-{epoch:03d}.h5'
         
-        model_save_file = model_save_directory + '/' + 'weights.{epoch:02d}-{val_loss:.2f}.hdf5'
-        csv_save_file = model_save_directory + '/' + 'log.csv'
-        tensorboard_log_dir = model_save_directory
+        self.model_save_file = model_save_directory + '/' + 'weights.{epoch:02d}-{val_loss:.2f}.hdf5'
+        self.csv_save_file = model_save_directory + '/' + 'log.csv'
+        self.tensorboard_log_dir = model_save_directory
+
         
         '''
         if not os.path.isdir(tensorboard_log_dir):
           os.makedirs(tensorboard_log_dir)
         '''
         
-        save_load_params['model_save_file': model_save_file]
-        save_load_params['csv_save_file': csv_save_file]
-        save_load_params['tensorboard_log_dir': tensorboard_log_dir]
-       
-        return save_load_params
+
+      
         
      
    
@@ -130,9 +143,8 @@ class model_load_and_save:
     
                   
     def getlastmodeldir(self, main_dir):
-      sub_dirs = glob(main_dir + '/*/')
-      
-      if sub_dirs == None:
+      sub_dirs = glob(main_dir + '/*/')      
+      if sub_dirs == []:
         return None
       else:
         return sub_dirs[-1]
@@ -147,3 +159,18 @@ class model_load_and_save:
             return None
         
         return last_model[-1]
+    
+    
+    def get_time_string(self):
+        
+        utc_time = pytz.utc.localize(datetime.datetime.utcnow())
+        local_time = utc_time.astimezone(pytz.timezone(self.local_timezone))  
+                
+        year = str(local_time.year)  
+        month = str(local_time.month) 
+        day = str(local_time.day) 
+        hour = str(local_time.hour)
+        minute = str(local_time.minute)
+        
+        time_string = year + '-' + month + '-' + day + '-' + hour + '-' + minute
+        return(time_string)

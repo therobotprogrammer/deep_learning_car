@@ -84,9 +84,7 @@ def build_nvidia_paper_model(sensor_count, single_sensor_input_shape):
 
 
     model = Model(inputs = sensor_inputs, outputs = x)
-    model.summary()   
-    show_model(model)
-    
+    model.summary()       
     return model
     
 
@@ -103,21 +101,20 @@ def get_sensor_count_and_input_shape(sample_generator):
     return sensor_count, single_sensor_input_shape
     
 
-#def train_model(model):
 ######################################################################
+from model_load_and_save import model_load_and_save
 
-google_drive = '/home/pt/Desktop/debug_data'
+google_drive = '/home/pt/Desktop/temp'
+model_save_top_directory = google_drive + '/deep_learning/01_Self_Driving_Car_Nvidia_Paper/saved_models' 
 
-### Model save location ###
-model_save_directory = google_drive + '/nvidia_car_paper'
-if not os.path.isdir(model_save_directory):
-  os.mkdir(model_save_directory)
+save_load_params = {
+                            'continue_training_last_model' : True,
+                            'create_time_stamped_dirs' : True                                
+                   }
 
-model_save_file = model_save_directory + '/' + 'model-{epoch:03d}.h5'
+model_saver = model_load_and_save(model_save_top_directory, **save_load_params)
+
 ###########################
-
-
-
 
 
 model_params = {
@@ -161,16 +158,27 @@ validation_generator = MultiSensorTimeSeriesGenerator([driving_log_validation['c
 show_sample_from_generator(train_generator, batch_generator_params)
 
 sensor_count, input_shape = get_sensor_count_and_input_shape(train_generator)
-model = build_nvidia_paper_model(sensor_count, input_shape)
 
-save_weights = ModelCheckpoint(model_save_file, monitor='val_loss', save_best_only=True, mode='auto')
+if not model_saver.continue_training_last_model:
+    model = build_nvidia_paper_model(sensor_count, input_shape)
+else:
+    model = model_saver.model
+
+show_model(model)
+
+
+#callbacks
+save_weights = ModelCheckpoint(filepath=model_saver.model_save_file, monitor='val_loss', verbose =0, save_best_only=True, mode='auto')
+csv_logger = CSVLogger(model_saver.csv_save_file)
+tensorboard = TensorBoard(log_dir=model_saver.tensorboard_log_dir, histogram_freq=0, write_graph=True, write_images=True)
+
+save_weights = ModelCheckpoint(model_saver.model_save_file, monitor='val_loss', save_best_only=True, mode='auto')
 
 model.compile(optimizer= Adam(lr=model_params['learning_rate']), loss='mean_squared_error')
 
 model.fit_generator(generator=train_generator, validation_data = validation_generator, use_multiprocessing = True, workers=4 )
 
 #model.fit_generator(generator=train_generator, validation_data = validation_generator)
-
 
 
 

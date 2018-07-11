@@ -33,8 +33,9 @@ class model_load_and_save:
         self.continue_training_last_model = continue_training_last_model 
         self.create_time_stamped_dirs = create_time_stamped_dirs
         self.local_timezone = local_timezone
-        self.setup_paths()
         self.model = None
+
+        self.setup_paths()
 
         
         

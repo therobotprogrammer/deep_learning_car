@@ -1,0 +1,149 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Jul  9 15:55:49 2018
+
+@author: pt
+"""
+
+import os
+from glob import glob
+from keras.models import load_model
+
+
+    
+'''
+#google_drive = '/home/pt/Desktop/google_drive'
+### Model save location ###
+
+
+save_load_params = {
+                            'continue_training_last_model' = True,
+                            'create_time_stamped_directories' = True                                
+                   }
+
+model_save_top_directory = google_drive + '/deep_learning/01_Self_Driving_Car_Nvidia_Paper/saved_models' 
+#model_save_directory = model_save_top_directory 
+'''
+
+class model_load_and_save:
+    def __init__(self, model_save_top_directory, save_load_params):
+        model_load_and_save(model_save_top_directory, save_load_params)
+        
+
+    def model_load_and_save(self, model_save_top_directory, save_load_params):
+                                   
+        if os.path.isdir(model_save_top_directory):
+            cleanup(model_save_top_directory)
+        else:
+            os.mkdir(model_save_top_directory)
+
+        
+        if save_load_params[continue_training_last_model] == True:
+          last_model_dir = getlastmodeldir(model_save_top_directory) #assumes sub dir names are appended with time strings
+          if last_model_dir == None:
+            save_load_params[continue_training_last_model] == False
+          else:
+            model_save_directory = last_model_dir
+            saved_model = get_last_file(model_save_directory, file_type = 'h5')
+            if saved_model != None:        
+                print('>>> Previously saved model found. Training will continue from file: \n' + saved_model) 
+            else:
+                print('>>> No saved models found. A new model will be trained')
+                save_load_params[continue_training_last_model] = False  
+            
+        if save_load_params[continue_training_last_model] == False:
+            if save_load_params[create_time_stamped_directories]:
+                model_save_directory =  model_save_top_directory + '/' + auto_dl.get_time_string()
+            else:
+                model_save_directory = model_save_top_directory + '/default_model'
+        
+          if os.path.isdir(model_save_directory):
+            print('Model directory emptied. It was created in the last minute hence emptied. ')
+            os.rmdir(model_save_directory)
+          os.makedirs(model_save_directory)
+          print('Created directory for this experiment: ' + model_save_directory)
+          #model_save_file = model_save_directory + '/' + 'model-{epoch:03d}.h5'
+        
+        model_save_file = model_save_directory + '/' + 'weights.{epoch:02d}-{val_loss:.2f}.hdf5'
+        csv_save_file = model_save_directory + '/' + 'log.csv'
+        tensorboard_log_dir = model_save_directory
+        
+        '''
+        if not os.path.isdir(tensorboard_log_dir):
+          os.makedirs(tensorboard_log_dir)
+        '''
+        
+        save_load_params['model_save_file': model_save_file]
+        save_load_params['csv_save_file': csv_save_file]
+        save_load_params['tensorboard_log_dir': tensorboard_log_dir]
+       
+        return save_load_params
+        
+     
+   
+    def deep_cleanup(self, currentDir):
+      index = 0
+    
+      for root, dirs, files in os.walk(currentDir):
+          for dir in dirs:
+              newDir = os.path.join(root, dir)
+              index += 1
+              print (str(index) + " ---> " + newDir)
+    
+              try:
+                  os.removedirs(newDir)
+                  print ("Directory empty! Deleting...")
+                  print (" ")
+              except:
+                  print ("Directory not empty and will not be removed")
+                  print (" ")
+    
+    
+    
+    def cleanup(self, main_dir, show_relative_dir_names = False):
+        sub_dirs = glob(main_dir + '/*/')
+        
+        if sub_dirs == None:
+            return
+        else:
+            for index, directory in enumerate(sub_dirs):
+              
+              if show_relative_dir_names:  
+                  relative_dirname = directory.split('/')[-3:]
+                  relative_dirname = '/'.join(relative_dirname)
+                  relative_dirname = '/' + relative_dirname
+                  #ralative_dirname = os.path.split(ralative_dirname)[0]  
+                  print (str(index) + " ---> " + relative_dirname)
+              else:
+                  print (str(index) + " ---> " + directory)
+    
+              try:
+                  os.removedirs(directory)
+                  print()
+                  print ("Directory empty! Deleting...")
+                  print (" ")
+              except:
+                  print ("Directory not empty and will not be removed")
+                  print (" ") 
+    
+    
+                  
+    def getlastmodeldir(self, main_dir):
+      sub_dirs = glob(main_dir + '/*/')
+      
+      if sub_dirs == None:
+        return None
+      else:
+        return sub_dirs[-1]
+    
+    
+    
+    def get_last_file(self, directory, file_type = 'h5' ):    
+        last_model = glob(directory + '/*.' + file_type) 
+        
+        if last_model == []:
+            print('No saved model found')
+            return None
+        
+        return last_model[-1]

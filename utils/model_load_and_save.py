@@ -90,7 +90,7 @@ class model_load_and_save:
             print('Created directory for this experiment: ' + model_save_directory)
             #model_save_file = model_save_directory + '/' + 'model-{epoch:03d}.h5'
         
-        self.model_save_file = model_save_directory + '/' + 'weights-{epoch:02d}-{val_loss:.2f}.hdf5'
+        self.model_save_file = model_save_directory + '/' + 'weights-{epoch:02d}-{val_loss:.2f}.h5'
         self.csv_save_file = model_save_directory + '/' + 'log-' + str(self.initial_epoch) + '.csv'
         self.tensorboard_log_dir = model_save_directory
        
@@ -184,3 +184,4 @@ class model_load_and_save:
         time_string = year + '-' + month + '-' + day + '-' + hour + '-' + minute
         return(time_string)
         
+t = model_load_and_save('/home/pt/Desktop/temp')

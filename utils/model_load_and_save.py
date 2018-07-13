@@ -149,7 +149,8 @@ class model_load_and_save:
     
                   
     def getlastmodeldir(self, main_dir):
-      sub_dirs = glob(main_dir + '/*/')      
+      sub_dirs = glob(main_dir + '/*/')     
+      sub_dirs = sorted(sub_dirs)
       if sub_dirs == []:
         return None
       else:
@@ -160,6 +161,7 @@ class model_load_and_save:
     def get_last_file(self, directory, file_type = 'h5' ):    
         
         last_model = glob(directory + '/*.' + file_type) 
+        last_model = sorted(last_model)
         
         if last_model == []:
             print('No saved model found')
@@ -181,3 +183,4 @@ class model_load_and_save:
         
         time_string = year + '-' + month + '-' + day + '-' + hour + '-' + minute
         return(time_string)
+        

@@ -59,7 +59,7 @@ class model_load_and_save:
             self.continue_training_last_model = False
           else:
             model_save_directory = last_model_dir
-            saved_model_filename = self.get_last_file(model_save_directory, file_type = 'hdf5')
+            saved_model_filename = self.get_last_file(model_save_directory, file_type = 'h5')
             saved_csv_save_file = self.get_last_file(model_save_directory, file_type = 'csv')
 
             if saved_model_filename != None:
@@ -90,7 +90,7 @@ class model_load_and_save:
             print('Created directory for this experiment: ' + model_save_directory)
             #model_save_file = model_save_directory + '/' + 'model-{epoch:03d}.h5'
         
-        self.model_save_file = model_save_directory + '/' + 'weights.{epoch:02d}-{val_loss:.2f}.hdf5'
+        self.model_save_file = model_save_directory + '/' + 'weights-{epoch:02d}-{val_loss:.2f}.hdf5'
         self.csv_save_file = model_save_directory + '/' + 'log-' + str(self.initial_epoch) + '.csv'
         self.tensorboard_log_dir = model_save_directory
        
@@ -157,7 +157,8 @@ class model_load_and_save:
     
     
     
-    def get_last_file(self, directory, file_type = 'hdf5' ):    
+    def get_last_file(self, directory, file_type = 'h5' ):    
+        
         last_model = glob(directory + '/*.' + file_type) 
         
         if last_model == []:

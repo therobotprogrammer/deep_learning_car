@@ -184,4 +184,4 @@ class model_load_and_save:
         time_string = year + '-' + month + '-' + day + '-' + hour + '-' + minute
         return(time_string)
         
-t = model_load_and_save('/home/pt/Desktop/temp')
+#t = model_load_and_save('/home/pt/Desktop/temp')

@@ -59,7 +59,7 @@ class model_load_and_save:
             self.continue_training_last_model = False
           else:
             model_save_directory = last_model_dir
-            saved_model_filename = self.get_last_file(model_save_directory, file_type = 'h5')
+            saved_model_filename = self.get_last_model(model_save_directory)
             saved_csv_save_file = self.get_last_file(model_save_directory, file_type = 'csv')
 
             if saved_model_filename != None:
@@ -157,14 +157,34 @@ class model_load_and_save:
         return sub_dirs[-1]
     
     
+    #returns last model. Worls with both h5 and hdf5 
+    def get_last_model(self, directory):
+        last_model_h5 = self.get_last_file(directory, 'h5')
+        last_model_hdf5 = self.get_last_file(directory, 'hdf5')
+        
+        if (last_model_h5 == None) and (last_model_hdf5 == None):
+            return None
+        elif (last_model_h5 == None) and (last_model_hdf5 != None):
+            return last_model_hdf5
+        elif (last_model_h5 != None) and (last_model_hdf5 == None):
+            return last_model_h5
+        else:
+            h5_file_without_extension = last_model_h5.split('.h5')
+            hdf5_file_without_extension = last_model_hdf5.split('.hdf5')
+            
+            if h5_file_without_extension > hdf5_file_without_extension:
+                return last_model_h5
+            else:
+                return last_model_hdf5
+            
+
     
-    def get_last_file(self, directory, file_type = 'h5' ):    
+    def get_last_file(self, directory, file_type):    
         
         last_model = glob(directory + '/*.' + file_type) 
-        last_model = sorted(last_model)
+        last_model = sorted(last_model)            
         
-        if last_model == []:
-            print('No saved model found')
+        if last_model == []:           
             return None
         
         return last_model[-1]

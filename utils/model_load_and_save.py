@@ -59,7 +59,7 @@ class model_load_and_save:
             self.continue_training_last_model = False
           else:
             model_save_directory = last_model_dir
-            saved_model_filename = self.get_last_file(model_save_directory, file_type = 'h5')
+            saved_model_filename = self.get_last_file(model_save_directory, file_type = 'hdf5')
             saved_csv_save_file = self.get_last_file(model_save_directory, file_type = 'csv')
 
             if saved_model_filename != None:
@@ -157,7 +157,7 @@ class model_load_and_save:
     
     
     
-    def get_last_file(self, directory, file_type = 'h5' ):    
+    def get_last_file(self, directory, file_type = 'hdf5' ):    
         last_model = glob(directory + '/*.' + file_type) 
         
         if last_model == []:

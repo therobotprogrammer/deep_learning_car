@@ -91,7 +91,9 @@ class model_load_and_save:
             #model_save_file = model_save_directory + '/' + 'model-{epoch:03d}.h5'
         
         self.model_save_file = model_save_directory + '/' + 'weights-{epoch:02d}-{val_loss:.2f}.h5'
-        self.csv_save_file = model_save_directory + '/' + 'log-' + str(self.initial_epoch) + '.csv'
+        #self.csv_save_file = model_save_directory + '/' + 'log-' + str(self.initial_epoch) + '.csv'
+        self.csv_save_file = model_save_directory + '/' + 'training_log'
+
         self.tensorboard_log_dir = model_save_directory
        
         '''

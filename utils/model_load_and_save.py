@@ -46,7 +46,7 @@ class model_load_and_save:
         self.model = None
                  
         if os.path.isdir(self.model_save_top_directory):
-            self.cleanup(self.model_save_top_directory)
+            self.deep_cleanup(self.model_save_top_directory)
         else:
             os.makedirs(self.model_save_top_directory)
 
@@ -105,20 +105,35 @@ class model_load_and_save:
       index = 0
     
       for root, dirs, files in os.walk(currentDir):
-          for dir in dirs:
-              newDir = os.path.join(root, dir)
-              index += 1
-              print (str(index) + " ---> " + newDir)
+        # remove empty files. 
+        #Usecase: when keras callback CSVLogger is enabled and training interupted 
+        # due to lack or resources on google colab, then before this callback saves anything, 
+        # it created an empty .csv file. This causes problems when we resume training and 
+        # pandas tries to read this empty file
+        
+        for file in files:
+            file_full_path = os.path.join(root, file)
+            if os.path.getsize(file_full_path) == 0:
+                try: 
+                    os.remove(file_full_path)
+                except:
+                    print('File size is 0, but unable to remove it')
     
-              try:
-                  os.removedirs(newDir)
-                  print ("Directory empty! Deleting...")
-                  print (" ")
-              except:
-                  print ("Directory not empty and will not be removed")
-                  print (" ")
-    
-    
+        #remove empty directories
+        for dir in dirs:
+          newDir = os.path.join(root, dir)
+          index += 1
+          print (str(index) + " ---> " + newDir)
+        
+          try:
+              os.removedirs(newDir)
+              print ("Directory empty! Deleting...")
+              print (" ")
+          except:
+              print ("Directory not empty and will not be removed")
+              print (" ")
+
+
     
     def cleanup(self, main_dir, show_relative_dir_names = False):
         sub_dirs = glob(main_dir + '/*/')
@@ -204,5 +219,5 @@ class model_load_and_save:
         time_string = year + '-' + month + '-' + day + '-' + hour + '-' + minute
         return(time_string)
         
-#t = model_load_and_save('/home/pt/Desktop/temp')
+#t = model_load_and_save(model_save_top_directory, **save_load_params)
 #t.csv_save_file

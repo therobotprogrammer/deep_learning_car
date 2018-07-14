@@ -1,3 +1,6 @@
+google_drive = '/home/pt/Desktop/fake_google_drive'
+
+
 import wget, shutil, os, sys 
 
 # Download AutoDownloader

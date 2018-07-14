@@ -245,7 +245,7 @@ else:
 
 #callbacks
 save_weights = ModelCheckpoint(filepath=model_saver.model_save_file, monitor='val_loss', verbose =0, save_best_only=True, mode='auto')
-csv_logger = CSVLogger(model_saver.csv_save_file)
+csv_logger = CSVLogger(model_saver.csv_save_file, append = True)
 #tensorboard = TensorBoard(log_dir=model_saver.tensorboard_log_dir, histogram_freq=0, write_graph=True, write_images=True)
 #callbacks = [save_weights, csv_logger, tensorboard]
 callbacks = [save_weights, csv_logger]

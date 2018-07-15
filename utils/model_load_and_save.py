@@ -65,7 +65,7 @@ class model_load_and_save:
             if saved_model_filename != None:
                 try:    
                     self.model = load_model(saved_model_filename)      
-                    if not saved_csv_save_file == None
+                    if not saved_csv_save_file == None:
                         log_pd = pd.read_csv(saved_csv_save_file, header = 0)  
                         self.initial_epoch = 1 + log_pd['epoch'].iloc[-1]  
                     else:

@@ -93,9 +93,13 @@ class model_load_and_save:
             print('Created directory for this experiment: ' + model_save_directory)
             #model_save_file = model_save_directory + '/' + 'model-{epoch:03d}.h5'
         
-        self.model_save_file = model_save_directory + '/' + 'weights-{epoch:02d}-{val_loss:.2f}.h5'
+        #self.model_save_file = model_save_directory + '/' + 'weights-{epoch:02d}-{val_loss:.2f}.h5'
         #self.csv_save_file = model_save_directory + '/' + 'log-' + str(self.initial_epoch) + '.csv'
-        self.csv_save_file = model_save_directory + '/' + 'training_log.csv'
+        
+        #self.csv_save_file = model_save_directory + '/' + 'training_log.csv'
+        
+        self.model_save_file = os.path.join(model_save_directory, 'weights-{epoch:02d}-{val_loss:.2f}.h5' )
+        self.csv_save_file = os.path.join(model_save_directory, 'log.csv')
 
         self.tensorboard_log_dir = model_save_directory
        

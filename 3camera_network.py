@@ -1,7 +1,14 @@
-google_drive = '/home/pt/Desktop/fake_google_drive'
-
-
 import wget, shutil, os, sys 
+
+google_drive = '/home/pt/Desktop/fake_google_drive'
+sys.path.insert(0, '/home/pt/repository/Auto-Downloader/Code') 
+from AutoDownloader import AutoDownloader
+auto_dl = AutoDownloader(local_timezone =  'Asia/Kolkata')
+
+auto_dl.recursively_add_to_path('/home/pt/repository/deep_learning_car') #Warning: Do not add code recursively if you dont trust the source.
+project_dir = ('/home/pt/Desktop/fake_colab/Deep_Learning')
+
+
 
 # Download AutoDownloader
 script_dir = '/home/pt/Desktop/fake_colab/scripts'
@@ -21,7 +28,7 @@ sys.path.insert(0, script_dir)
 
 
 
-
+'''
 project_dir = ('/home/pt/Desktop/fake_colab/Deep_Learning')
 
 #    /COMMON_UTILS is a special directory. All its contents are deleted & downloaded for latest copy. 
@@ -41,10 +48,6 @@ data_to_download =  {
                                         'https://d17h27t6h515a5.cloudfront.net/topher/2016/December/584f6edd_data/data.zip'
                                    ],
 
-
-    '/CODE':                      [
-                                        'https://github.com/therobotprogrammer/deep_learning_car/archive/master.zip',                                        
-                                   ],
     
     '/COMMON_UTILS':              [
                                         
@@ -75,7 +78,7 @@ auto_dl.send_notification('Hello form Colab!!!')
 #To get localtime as string
 #auto_dl.get_time_string()
 
-
+'''
 
 ######################################################################
 from model_load_and_save import model_load_and_save
@@ -83,7 +86,7 @@ from model_load_and_save import model_load_and_save
 model_save_top_directory = google_drive + '/deep_learning/01_Self_Driving_Car_Nvidia_Paper/saved_models' 
 
 save_load_params = {
-                            'continue_training_last_model' : True,
+                            'continue_training_last_model' : False,
                             'create_time_stamped_dirs' : True                                
                    }
 
@@ -126,7 +129,7 @@ def build_single_sensor_network(sensor_input):
     return x
 
 def show_model(model):
-    SVG(model_to_dot(model, show_shapes=True).create(prog='dot', format='svg'))
+    display(SVG(model_to_dot(model, show_shapes=True).create(prog='dot', format='svg')))
 
 
 def build_nvidia_paper_model(sensor_count, single_sensor_input_shape):
@@ -197,10 +200,10 @@ model_params = {
 batch_generator_params = {
              'length' : 1,
              'sampling_rate':1,
-             'stride':2,
+             'stride':1,
              'start_index':0,
              'end_index':None,
-             'shuffle':False,
+             'shuffle':True,
              'reverse':False,
              'batch_size':16,
              'image_dimention' : (160,320),
@@ -229,7 +232,7 @@ validation_batch_generator_params = batch_generator_params
 validation_batch_generator_params['batch_size'] = 16
 validation_generator = MultiSensorTimeSeriesGenerator([driving_log_validation['center'], driving_log_validation['left'], driving_log_validation['right']], driving_log_validation['steering'], **validation_batch_generator_params)
 
-#show_sample_from_generator(train_generator, batch_generator_params)
+show_sample_from_generator(train_generator, batch_generator_params)
 
 sensor_count, input_shape = get_sensor_count_and_input_shape(train_generator)
 
@@ -240,11 +243,11 @@ else:
     model = build_nvidia_paper_model(sensor_count, input_shape)
 
 
-#show_model(model)
+show_model(model)
 
 
 #callbacks
-save_weights = ModelCheckpoint(filepath=model_saver.model_save_file, monitor='val_loss', verbose =0, save_best_only=True, mode='auto')
+save_weights = ModelCheckpoint(filepath=model_saver.model_save_file, monitor='val_loss', verbose =3, save_best_only=True, mode='auto')
 csv_logger = CSVLogger(model_saver.csv_save_file, append = True)
 #tensorboard = TensorBoard(log_dir=model_saver.tensorboard_log_dir, histogram_freq=0, write_graph=True, write_images=True)
 #callbacks = [save_weights, csv_logger, tensorboard]

@@ -49,7 +49,7 @@ def update_driving_log(data_dir, driving_log_csv = None, relative_path = False):
 
 
 
-def show_batch(batch, batch_generator_params, figsize=(20, 5)):
+def show_batch(batch, batch_generator_params, save_dir = None, ):
     multi_camera_samples_batch = batch[0]
     multi_camera_labels_batch =  batch[1]    
     total_cameras = len(multi_camera_samples_batch)
@@ -58,7 +58,7 @@ def show_batch(batch, batch_generator_params, figsize=(20, 5)):
 
     if batch_generator_params['time_axis'] == False:
         total_timesteps = 1
-        figsize = (figsize[0]*3, figsize[1]*3 )
+        figsize = (figsize[0]*6, figsize[1]*6 )
         
     for camera in range(0,total_cameras):
         samples_batch = multi_camera_samples_batch[camera]        
@@ -73,16 +73,36 @@ def show_batch(batch, batch_generator_params, figsize=(20, 5)):
         total_samples = volume_shape[index['sample']]          
 
         
-        plt.figure(figsize=figsize)        
-        image_count = 1
+        #plt.figure(figsize=figsize) 
+        #plt.figure()        
+
+
         
+        
+
+        image_count = 1
+
         for s, sample in enumerate(samples_batch):    
             for t, timestep in enumerate(sample):        
-                plt.subplot(total_samples, total_timesteps, image_count)
+                plt.subplot(total_samples*total_cameras, total_timesteps, image_count)
                 image_count = image_count + 1
                 plt.imshow(timestep)
-                plt.axis('off')
+                plt.axis("off")
+                #plt.subplots_adjust(top = 1, bottom = 0, right = 1, left = 0, hspace = 0, wspace = 0)
+            #plt.subplots_adjust(top = 1, bottom = 0, right = 1, left = 0, hspace = 0, wspace = 0)
+
+            #image_count = 1  
+    #plt.subplots_adjust(top = 1, bottom = 0, right = 1, left = 0, hspace = .05, wspace = 0)
+    
+        if not save_dir == None:
+            file_name = save_dir + '/sample_batch_camera_' + str(camera) + '.pdf'
+            plt.axis("off")
+            #plt.subplots_adjust(top = 1, bottom = 0, right = 1, left = 0, hspace = 0, wspace = 0)
+            plt.savefig(file_name, box_inches='tight', pad_inches=0, dpi = 2000)
         plt.show()
+
+
+    plt.close()
 
     
     print('\nLabels Batch')

@@ -31,7 +31,7 @@ from os import listdir
 from os.path import isfile, join
 
 driving_log_pd = pd.read_csv(driving_log_csv, header= None)
-driving_log_pd.columns = ['center','left', 'right', 'x','y','z','steering']    
+driving_log_pd.columns = ['center','left', 'right', 'steering','throttle','brake','speed']    
 
 max_index = 0
 
@@ -63,7 +63,13 @@ for f in filenames:
         break
     
     driving_log_pd.loc[file_index, 'steering'] = file_index
+    driving_log_pd.loc[file_index, 'throttle'] = file_index*2
+    driving_log_pd.loc[file_index, 'brake'] = file_index*3
+    driving_log_pd.loc[file_index, 'speed'] = file_index*4
 
+
+
+    
     
 driving_log_pd = driving_log_pd[0:max_index]
 driving_log_pd.to_csv(driving_log_csv, index = False, header = False)    

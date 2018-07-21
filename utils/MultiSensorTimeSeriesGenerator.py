@@ -131,7 +131,6 @@ class MultiSensorTimeSeriesGenerator(keras.utils.Sequence):
         all_sensor_transforms = {}
         
         for row in rows:
-            print(row) 
             all_sensor_transforms[row]  = self.__get_random_sensor_transform()
             
         return all_sensor_transforms
@@ -151,7 +150,6 @@ class MultiSensorTimeSeriesGenerator(keras.utils.Sequence):
             if type(value) == bool:
                 if value == True: # we should flip with random probability
                     random_number = random.random()
-                    print(random_number)
                     if random_number >.5:
                         random_transform[key] = True
                     else:

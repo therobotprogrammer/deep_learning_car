@@ -58,11 +58,11 @@ class MultiSensorTimeSeriesGenerator(keras.utils.Sequence):
         self.time_axis = time_axis
         self.augmentation_parameters = augmentation_parameters           
         self.seed = seed
-        random.seed = self.seed
         
         self.use_augmentation = self.__get_decision_use_augmentation(augmentation_parameters)
         
 
+        self.data_gen_obj = keras.preprocessing.image.ImageDataGenerator(rotation_range = 45, data_format = 'channels_last')
 
 
         if self.start_index > self.end_index:
@@ -131,7 +131,7 @@ class MultiSensorTimeSeriesGenerator(keras.utils.Sequence):
         all_sensor_transforms = {}
         
         for row in rows:
-            all_sensor_transforms[row]  = self.__get_random_sensor_transform()
+            all_sensor_transforms[row]  = self.data_gen_obj.get_random_transform(self.image_dimention)
             
         return all_sensor_transforms
         
@@ -142,7 +142,7 @@ class MultiSensorTimeSeriesGenerator(keras.utils.Sequence):
         if sensor_transform['flip_horizontal']:
             target = -target
         
-        
+    '''    
     def __get_random_sensor_transform(self):
         #random_transform = self.augmentation_parameters
         random_transform = {}
@@ -164,7 +164,7 @@ class MultiSensorTimeSeriesGenerator(keras.utils.Sequence):
                     range_min, range_max = self.get_range(value)
                     random_transform[key] = random.uniform(range_min, range_max)                
         return random_transform
-    
+    '''
     
     def get_range(self,item):
         #we have a specific range
@@ -191,7 +191,6 @@ class MultiSensorTimeSeriesGenerator(keras.utils.Sequence):
         single_sensor_samples_batch, single_sensor_targets_batch = self._empty_batch(len(rows))       
         
         
-        data_gen_obj = keras.preprocessing.image.ImageDataGenerator(data_format = 'channels_last')
         
         for j, row in enumerate(rows):
             #Note: Be careful of off-by-one errors with rows. 
@@ -200,13 +199,15 @@ class MultiSensorTimeSeriesGenerator(keras.utils.Sequence):
             indices_consecutive_timesteps = range(rows[j] - self.length, rows[j], self.sampling_rate)
             file_names_consecutive_timesteps = single_sensor_data[list(indices_consecutive_timesteps)]    
             
+
             
             for t, file_at_timestep in enumerate(file_names_consecutive_timesteps): #we did not use time 0 to t because length will be different if we skip frames
                 loaded_image = resize(imread(file_at_timestep), self.image_dimention, mode='constant')
                 
                 if self.use_augmentation:                    
                     transform = all_sensor_transforms[row]
-                    loaded_image = data_gen_obj.apply_transform(loaded_image, transform)
+                    #loaded_image = data_gen_obj.apply_transform(loaded_image, transform)
+                    loaded_image = self.data_gen_obj.apply_transform(loaded_image, transform)
                     
                     #loaded_image = keras.preprocessing.image.apply_affine_transform(loaded_image, **transform)
                     #loaded_image = keras.preprocessing.image.apply_transform(loaded_image, transform)
@@ -266,15 +267,19 @@ if (__name__) == '__main__':
                             'brightness':0.0
                         }
     '''
-    
-    augmentation_parameters =   {
-                            'theta':0,                                         
+        augmentation_parameters =   {
+                            'theta':0.5,                                         
                             'tx':0,                                         
                             'ty':0,                                 
                             'shear':0,
                             'zx':0,
                             'zy':0,
+                            'flip_horizontal':False,
+                            'flip_vertical':False,
+                            'channel_shift_intencity': 0.0,
+                            'brightness':0.0
                         }
+
     
     '''
     batch_generator_params = {

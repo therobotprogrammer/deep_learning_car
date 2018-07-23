@@ -93,7 +93,7 @@ def show_batch(batch, batch_generator_params, save_dir = None, ):
         plt.subplots_adjust(top = 1, bottom = 0, right = 1, left = 0, hspace = 0, wspace = 0)
 
         if not save_dir == None:
-            file_name = save_dir + '/batch_cam_' + str(camera) + '.pdf'
+            file_name = save_dir + '/batch_cam_' + str(camera) + '.jpg'
             plt.axis("off")
             #plt.subplots_adjust(top = 1, bottom = 0, right = 1, left = 0, hspace = 0, wspace = 0)
             plt.savefig(file_name, box_inches='tight', pad_inches=0, dpi = 2000)

@@ -74,17 +74,17 @@ class MultiSensorTimeSeriesGenerator(keras.utils.Sequence):
 
     def __get_decision_use_augmentation(self, augmentation_parameters):
         default_augmentation_params =  {
-                                                'theta_range':0,                                         
-                                                'tx_range':0,                                         
-                                                'ty_range':0,                                 
-                                                'shear_range':0,
-                                                'zx_range':0,
-                                                'zy_range':0,
-                                                'flip_horizontal':False,
-                                                'flip_vertical':False,
-                                                'channel_shift_intencity_range': 0,
-                                                'brightness_range':0
-                                            }
+                                            'theta':0,                                         
+                                            'tx':0,                                         
+                                            'ty':0,                                 
+                                            'shear':0,
+                                            'zx':0,
+                                            'zy':0,
+                                            'flip_horizontal':False,
+                                            'flip_vertical':False,
+                                            'channel_shift_intencity': 0.0,
+                                            'brightness':0.0
+                                        }
         if augmentation_parameters == default_augmentation_params:
             return False
         else:
@@ -191,7 +191,7 @@ class MultiSensorTimeSeriesGenerator(keras.utils.Sequence):
         single_sensor_samples_batch, single_sensor_targets_batch = self._empty_batch(len(rows))       
         
         
-        data_den_obj = keras.preprocessing.image.ImageDataGenerator()
+        data_gen_obj = keras.preprocessing.image.ImageDataGenerator(data_format = 'channels_last')
         
         for j, row in enumerate(rows):
             #Note: Be careful of off-by-one errors with rows. 
@@ -206,7 +206,11 @@ class MultiSensorTimeSeriesGenerator(keras.utils.Sequence):
                 
                 if self.use_augmentation:                    
                     transform = all_sensor_transforms[row]
-                    loaded_image = data_den_obj.apply_transform(loaded_image, transform)
+                    loaded_image = data_gen_obj.apply_transform(loaded_image, transform)
+                    
+                    #loaded_image = keras.preprocessing.image.apply_affine_transform(loaded_image, **transform)
+                    #loaded_image = keras.preprocessing.image.apply_transform(loaded_image, transform)
+
                     
                 single_sensor_samples_batch[j, t] = loaded_image
             
@@ -247,19 +251,32 @@ if (__name__) == '__main__':
     sys.path.insert(0, '/home/pt/repository/deep_learning_car/utils') 
     import custom_utils as custom_utils
     
-
+    #Q Note: this is different from Keras API. as they use zoom_range etc. Later this can be changed
+    
     augmentation_parameters =   {
-                            'theta_range':0,                                         
-                            'tx_range':0,                                         
-                            'ty_range':0,                                 
-                            'shear_range':0,
-                            'zx_range':0,
-                            'zy_range':0,
-                            'flip_horizontal':True,
-                            'flip_vertical':True,
-                            'channel_shift_intencity_range': 0.0,
-                            'brightness_range':0.0
+                            'theta':0.5,                                         
+                            'tx':0,                                         
+                            'ty':0,                                 
+                            'shear':0,
+                            'zx':0,
+                            'zy':0,
+                            'flip_horizontal':False,
+                            'flip_vertical':False,
+                            'channel_shift_intencity': 0.0,
+                            'brightness':0.0
                         }
+    '''
+    
+    augmentation_parameters =   {
+                            'theta':0,                                         
+                            'tx':0,                                         
+                            'ty':0,                                 
+                            'shear':0,
+                            'zx':0,
+                            'zy':0,
+                        }
+    
+    '''
     batch_generator_params = {
                  'length' : 10,
                  'sampling_rate':1,

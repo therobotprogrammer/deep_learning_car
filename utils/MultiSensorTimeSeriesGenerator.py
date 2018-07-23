@@ -24,19 +24,8 @@ class MultiSensorTimeSeriesGenerator(keras.utils.Sequence):
                  image_dimention = (160,320),
                  n_channels = 3,
                  time_axis = True,
-                 augmentation_parameters =  {
-                                                'theta_range':0,                                         
-                                                'tx_range':0,                                         
-                                                'ty_range':0,                                 
-                                                'shear_range':0,
-                                                'zx_range':0,
-                                                'zy_range':0,
-                                                'flip_horizontal':False,
-                                                'flip_vertical':False,
-                                                'channel_shift_intencity_range': 0,
-                                                'brightness_range':0
-                                            },
-                 seed = 0
+                 seed = None,
+                 image_data_gen_obj = None                 
                  ):
         
         self.multi_sensor_data = multi_sensor_data
@@ -56,13 +45,9 @@ class MultiSensorTimeSeriesGenerator(keras.utils.Sequence):
         self.n_channels = n_channels
         self.n_sensors = len(self.multi_sensor_data)        
         self.time_axis = time_axis
-        self.augmentation_parameters = augmentation_parameters           
         self.seed = seed
-        
-        self.use_augmentation = self.__get_decision_use_augmentation(augmentation_parameters)
-        
 
-        self.data_gen_obj = keras.preprocessing.image.ImageDataGenerator(rotation_range = 45, data_format = 'channels_last')
+        self.image_data_gen_obj = image_data_gen_obj
 
 
         if self.start_index > self.end_index:
@@ -70,26 +55,7 @@ class MultiSensorTimeSeriesGenerator(keras.utils.Sequence):
                              'is disallowed, as no part of the sequence '
                              'would be left to be used as current step.'
                              % (self.start_index, self.end_index))
-            
-
-    def __get_decision_use_augmentation(self, augmentation_parameters):
-        default_augmentation_params =  {
-                                            'theta':0,                                         
-                                            'tx':0,                                         
-                                            'ty':0,                                 
-                                            'shear':0,
-                                            'zx':0,
-                                            'zy':0,
-                                            'flip_horizontal':False,
-                                            'flip_vertical':False,
-                                            'channel_shift_intencity': 0.0,
-                                            'brightness':0.0
-                                        }
-        if augmentation_parameters == default_augmentation_params:
-            return False
-        else:
-            return True
-        
+                   
         
     def __len__(self):
         return (self.end_index - self.start_index +
@@ -113,7 +79,7 @@ class MultiSensorTimeSeriesGenerator(keras.utils.Sequence):
             rows = np.arange(i, min(i + self.batch_size * self.stride, self.end_index + 1), self.stride)
             
             
-        if self.use_augmentation:
+        if self.image_data_gen_obj != None:
             all_sensor_transforms = self.__get_all_sensor_transforms(rows)
                 
         multi_camera_tensor = []
@@ -131,7 +97,7 @@ class MultiSensorTimeSeriesGenerator(keras.utils.Sequence):
         all_sensor_transforms = {}
         
         for row in rows:
-            all_sensor_transforms[row]  = self.data_gen_obj.get_random_transform(self.image_dimention)
+            all_sensor_transforms[row]  = self.image_data_gen_obj.get_random_transform(self.image_dimention, self.seed)
             
         return all_sensor_transforms
         
@@ -142,30 +108,8 @@ class MultiSensorTimeSeriesGenerator(keras.utils.Sequence):
         if sensor_transform['flip_horizontal']:
             target = -target
         
-    '''    
-    def __get_random_sensor_transform(self):
-        #random_transform = self.augmentation_parameters
-        random_transform = {}
-        for key, value in self.augmentation_parameters.items():
-            if type(value) == bool:
-                if value == True: # we should flip with random probability
-                    random_number = random.random()
-                    if random_number >.5:
-                        random_transform[key] = True
-                    else:
-                        random_transform[key] = False
-                else:
-                    random_transform[key] = False # Done flip
-                    
-            else:
-                if value == 0:
-                    random_transform[key] = 0
-                else:
-                    range_min, range_max = self.get_range(value)
-                    random_transform[key] = random.uniform(range_min, range_max)                
-        return random_transform
+
     '''
-    
     def get_range(self,item):
         #we have a specific range
         if type(item) == list:
@@ -181,6 +125,7 @@ class MultiSensorTimeSeriesGenerator(keras.utils.Sequence):
             raise NameError('Invalid range for type. Enter Int or Float or a list with min and max range')
         
         return range_min, range_max
+    '''
         
 
         
@@ -204,10 +149,10 @@ class MultiSensorTimeSeriesGenerator(keras.utils.Sequence):
             for t, file_at_timestep in enumerate(file_names_consecutive_timesteps): #we did not use time 0 to t because length will be different if we skip frames
                 loaded_image = resize(imread(file_at_timestep), self.image_dimention, mode='constant')
                 
-                if self.use_augmentation:                    
+                if self.image_data_gen_obj != None:                    
                     transform = all_sensor_transforms[row]
-                    #loaded_image = data_gen_obj.apply_transform(loaded_image, transform)
-                    loaded_image = self.data_gen_obj.apply_transform(loaded_image, transform)
+                    #loaded_image = image_data_gen_obj.apply_transform(loaded_image, transform)
+                    loaded_image = self.image_data_gen_obj.apply_transform(loaded_image, transform)
                     
                     #loaded_image = keras.preprocessing.image.apply_affine_transform(loaded_image, **transform)
                     #loaded_image = keras.preprocessing.image.apply_transform(loaded_image, transform)
@@ -254,34 +199,34 @@ if (__name__) == '__main__':
     
     #Q Note: this is different from Keras API. as they use zoom_range etc. Later this can be changed
     
-    augmentation_parameters =   {
-                            'theta':0.5,                                         
-                            'tx':0,                                         
-                            'ty':0,                                 
-                            'shear':0,
-                            'zx':0,
-                            'zy':0,
-                            'flip_horizontal':False,
-                            'flip_vertical':False,
-                            'channel_shift_intencity': 0.0,
-                            'brightness':0.0
-                        }
-    '''
-        augmentation_parameters =   {
-                            'theta':0.5,                                         
-                            'tx':0,                                         
-                            'ty':0,                                 
-                            'shear':0,
-                            'zx':0,
-                            'zy':0,
-                            'flip_horizontal':False,
-                            'flip_vertical':False,
-                            'channel_shift_intencity': 0.0,
-                            'brightness':0.0
-                        }
+    image_generator_params =    {   
+                                     'featurewise_center':False, 
+                                     'samplewise_center':False, 
+                                     'featurewise_std_normalization':False, 
+                                     'samplewise_std_normalization':False, 
+                                     'zca_whitening':False, 
+                                     'zca_epsilon':1e-06, 
+                                     'rotation_range':0.0, 
+                                     'width_shift_range':0.0, 
+                                     'height_shift_range':0.0, 
+                                     'brightness_range':None, 
+                                     'shear_range':0.0, 
+                                     'zoom_range':0.0, 
+                                     'channel_shift_range':0.0, 
+                                     'fill_mode':'nearest', 
+                                     'cval':0.0, 
+                                     'horizontal_flip':False, 
+                                     'vertical_flip':False, 
+                                     'rescale':None, 
+                                     'preprocessing_function':None, 
+                                     'data_format':None, 
+                                     'validation_split':0.0
+                                 }
 
     
-    '''
+    image_data_gen_obj = keras.preprocessing.image.ImageDataGenerator(**image_generator_params)
+
+
     batch_generator_params = {
                  'length' : 10,
                  'sampling_rate':1,
@@ -294,7 +239,7 @@ if (__name__) == '__main__':
                  'image_dimention' : (160,320),
                  'n_channels' : 3,
                  'time_axis':True,
-                 'augmentation_parameters': augmentation_parameters
+                 'image_data_gen_obj': image_data_gen_obj
              }
     
     

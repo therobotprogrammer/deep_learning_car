@@ -171,12 +171,11 @@ class MultiSensorTimeSeriesGenerator(keras.utils.Sequence):
                     multi_camera_tensor[left_sensor_index][j], multi_camera_tensor[right_sensor_index][j] = self.__swap_row(multi_camera_tensor[left_sensor_index][j], multi_camera_tensor[right_sensor_index][j])
                     
                     '''
-                    temp_row = np.empty(multi_camera_tensor[j][0].shape)
-                    temp_row = multi_camera_tensor[left_sensor_index][j] 
+                    temp_row = np.copy(multi_camera_tensor[left_sensor_index][j])
                     self.__show_row(temp_row)
                     
-                    multi_camera_tensor[left_sensor_index][j] = multi_camera_tensor[right_sensor_index][j] 
-                    multi_camera_tensor[right_sensor_index][j] = temp_row
+                    multi_camera_tensor[left_sensor_index][j] = np.copy(multi_camera_tensor[right_sensor_index][j]) 
+                    multi_camera_tensor[right_sensor_index][j] = np.copy(temp_row)
                     
                     self.__show_row(temp_row)                
 

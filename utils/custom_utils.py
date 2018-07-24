@@ -49,7 +49,7 @@ def update_driving_log(data_dir, driving_log_csv = None, relative_path = False):
 
 
 
-def show_batch(batch, batch_generator_params, save_dir = None, ):
+def show_batch(batch, batch_generator_params, save_dir = None ):
     multi_camera_samples_batch = batch[0]
     multi_camera_labels_batch =  batch[1]    
     total_cameras = len(multi_camera_samples_batch)

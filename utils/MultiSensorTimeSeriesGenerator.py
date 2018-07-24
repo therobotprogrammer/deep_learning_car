@@ -25,7 +25,8 @@ class MultiSensorTimeSeriesGenerator(keras.utils.Sequence):
                  n_channels = 3,
                  time_axis = True,
                  seed = None,
-                 image_data_gen_obj = None                 
+                 image_data_gen_obj = None,
+                 swap_sensors_on_horizontal_flip = False
                  ):
         
         self.multi_sensor_data = multi_sensor_data
@@ -48,6 +49,7 @@ class MultiSensorTimeSeriesGenerator(keras.utils.Sequence):
         self.seed = seed
 
         self.image_data_gen_obj = image_data_gen_obj
+        self.swap_sensors_on_horizontal_flip = swap_sensors_on_horizontal_flip
 
 
         if self.start_index > self.end_index:
@@ -79,17 +81,23 @@ class MultiSensorTimeSeriesGenerator(keras.utils.Sequence):
             rows = np.arange(i, min(i + self.batch_size * self.stride, self.end_index + 1), self.stride)
             
             
-        if self.image_data_gen_obj != None:
             all_sensor_transforms = self.__get_all_sensor_transforms(rows)
                 
-        multi_camera_tensor = []
-        
+        multi_camera_tensor = []        
         
         for sensor_index in range(0,self.n_sensors):
             samples,targets = self.__getcameraTensor(sensor_index, rows, all_sensor_transforms) # is this bad programming? - to do: code review
             multi_camera_tensor.append(samples)
         
-
+        
+        if self.image_data_gen_obj != None:
+            #Q: Code review - To Do:
+            #Q: Code reivew: should we pass multi_camera_tensor or use self. ? do we create an extra copy by not using self. ? 
+            #Q: Dows this use twice the ram? May be significant for latge datasets
+            #Q: Is it better to use a callback funciton here or just take image_data_gen_obj obj
+            
+            multi_camera_tensor = self.__applyAugmentations(multi_camera_tensor, rows)
+            
         return multi_camera_tensor, targets
     
     
@@ -128,6 +136,99 @@ class MultiSensorTimeSeriesGenerator(keras.utils.Sequence):
     '''
         
 
+    def __applyAugmentations(self, multi_camera_tensor, rows):
+        all_sensor_row_transforms = self.__get_all_sensor_transforms(rows)
+        all_sensor_row_transforms = list(all_sensor_row_transforms.values())
+        
+        use_batch_level_augmentation_flag = self.__get_batch_level_augmentation_flag()
+
+        for sensor_index in range(0,self.n_sensors):
+            single_sensor_samples_batch = multi_camera_tensor[sensor_index] 
+            
+            if use_batch_level_augmentation_flag:
+                sensor_image_data_gen_obj = self.__get_sensor_image_data_gen_obj
+                
+            for j, sample in enumerate(single_sensor_samples_batch, start = 0): 
+                transform = all_sensor_row_transforms[j]
+                
+                for t, image_at_timestep in enumerate(sample):    
+                    image_at_timestep = self.image_data_gen_obj.apply_transform(image_at_timestep, transform)
+                    
+                    if use_batch_level_augmentation_flag:
+                        image_at_timestep = sensor_image_data_gen_obj.standardize(image_at_timestep)
+                    
+                    multi_camera_tensor[sensor_index][ j, t] = image_at_timestep
+
+
+        #To Do: Implement multiple swaps for multi camera
+        if self.swap_sensors_on_horizontal_flip:
+            left_sensor_index = 1
+            right_sensor_index = 2
+            
+            for j, transform in enumerate(all_sensor_row_transforms, start = 0):
+                if transform['flip_horizontal']:
+                    '''
+                    multi_camera_tensor[left_sensor_index][j], multi_camera_tensor[right_sensor_index][j] = self.__swap_row(multi_camera_tensor[left_sensor_index][j], multi_camera_tensor[right_sensor_index][j])
+                    
+                    '''
+                    temp_row = np.empty(multi_camera_tensor[j][0].shape)
+                    temp_row = multi_camera_tensor[left_sensor_index][j] 
+                    self.__show_row(temp_row)
+                    
+                    multi_camera_tensor[left_sensor_index][j] = multi_camera_tensor[right_sensor_index][j] 
+                    multi_camera_tensor[right_sensor_index][j] = temp_row
+                    
+                    self.__show_row(temp_row)                
+
+                        
+        return multi_camera_tensor
+
+    '''
+    def __swap_row(self,row1,row2):
+        return row2,row1 
+    '''
+
+
+    def __show_row(self,temp_row):
+        #from matplotlib import pyplot as plt
+        
+        plt.figure(figsize=(25,25)) 
+        
+        image_count = 1 
+        
+        for t, timestep in enumerate(temp_row):        
+            plt.subplot(1, len(temp_row), image_count)
+            image_count = image_count + 1
+            plt.imshow(timestep)
+            plt.axis("off")
+            
+        plt.show()
+        
+        
+    
+    
+    def __get_sensor_image_data_gen_obj(self,single_sensor_samples_batch):
+        all_images_in_sensor_samples_batch = []
+        
+        for j, sample in enumerate(single_sensor_samples_batch): 
+            for image_at_timestep in sample:
+                all_images_in_sensor_samples_batch.append(image_at_timestep)
+        
+        sensor_image_data_gen_obj = self.image_data_gen_obj
+        sensor_image_data_gen_obj.fit(all_images_in_sensor_samples_batch)
+        return sensor_image_data_gen_obj
+        
+        
+    def __get_batch_level_augmentation_flag(self):
+        
+        if (image_data_gen_obj.featurewise_center or 
+            image_data_gen_obj.samplewise_center or 
+            image_data_gen_obj.featurewise_std_normalization or 
+            image_data_gen_obj.samplewise_std_normalization or 
+            image_data_gen_obj.zca_whitening):
+            return True
+        else:
+            return False
         
     def __getcameraTensor(self, sensor_index, rows, all_sensor_transforms):       
         single_sensor_data = self.multi_sensor_data[sensor_index]
@@ -149,16 +250,13 @@ class MultiSensorTimeSeriesGenerator(keras.utils.Sequence):
             for t, file_at_timestep in enumerate(file_names_consecutive_timesteps): #we did not use time 0 to t because length will be different if we skip frames
                 loaded_image = resize(imread(file_at_timestep), self.image_dimention, mode='constant')
                 
+                '''
+                # To apply augmentations within this function
                 if self.image_data_gen_obj != None:                    
                     transform = all_sensor_transforms[row]
-                    #loaded_image = image_data_gen_obj.apply_transform(loaded_image, transform)
                     loaded_image = self.image_data_gen_obj.apply_transform(loaded_image, transform)
-                    
-                    #loaded_image = keras.preprocessing.image.apply_affine_transform(loaded_image, **transform)
-                    #loaded_image = keras.preprocessing.image.apply_transform(loaded_image, transform)
-
-                    
-                single_sensor_samples_batch[j, t] = loaded_image
+                '''
+                single_sensor_samples_batch[j, t] = loaded_image                               
             
             if self.reverse:
                 #This will give steering corresponding to first timestep for timestaps 0 to 9.                 
@@ -215,7 +313,7 @@ if (__name__) == '__main__':
                                      'channel_shift_range':0.0, 
                                      'fill_mode':'nearest', 
                                      'cval':0.0, 
-                                     'horizontal_flip':False, 
+                                     'horizontal_flip':True, 
                                      'vertical_flip':False, 
                                      'rescale':None, 
                                      'preprocessing_function':None, 
@@ -228,7 +326,7 @@ if (__name__) == '__main__':
 
 
     batch_generator_params = {
-                 'length' : 10,
+                 'length' : 5,
                  'sampling_rate':1,
                  'stride':1,
                  'start_index':0,
@@ -239,7 +337,8 @@ if (__name__) == '__main__':
                  'image_dimention' : (160,320),
                  'n_channels' : 3,
                  'time_axis':True,
-                 'image_data_gen_obj': image_data_gen_obj
+                 'image_data_gen_obj': image_data_gen_obj,
+                 'swap_sensors_on_horizontal_flip': True
              }
     
     

@@ -167,30 +167,16 @@ class MultiSensorTimeSeriesGenerator(keras.utils.Sequence):
             
             for j, transform in enumerate(all_sensor_row_transforms, start = 0):
                 if transform['flip_horizontal']:
-                    '''
-                    multi_camera_tensor[left_sensor_index][j], multi_camera_tensor[right_sensor_index][j] = self.__swap_row(multi_camera_tensor[left_sensor_index][j], multi_camera_tensor[right_sensor_index][j])
-                    
-                    '''
-                    temp_row = np.copy(multi_camera_tensor[left_sensor_index][j])
-                    self.__show_row(temp_row)
-                    
+                    #Mpte we have to do deep copy here
+                    temp_row = np.copy(multi_camera_tensor[left_sensor_index][j])                    
                     multi_camera_tensor[left_sensor_index][j] = np.copy(multi_camera_tensor[right_sensor_index][j]) 
                     multi_camera_tensor[right_sensor_index][j] = np.copy(temp_row)
-                    
-                    self.__show_row(temp_row)                
-
-                        
+                                  
         return multi_camera_tensor
 
-    '''
-    def __swap_row(self,row1,row2):
-        return row2,row1 
-    '''
 
 
-    def __show_row(self,temp_row):
-        #from matplotlib import pyplot as plt
-        
+    def __debug_show_row(self,temp_row):       
         plt.figure(figsize=(25,25)) 
         
         image_count = 1 
@@ -303,7 +289,7 @@ if (__name__) == '__main__':
                                      'samplewise_std_normalization':False, 
                                      'zca_whitening':False, 
                                      'zca_epsilon':1e-06, 
-                                     'rotation_range':0.0, 
+                                     'rotation_range':20.0, 
                                      'width_shift_range':0.0, 
                                      'height_shift_range':0.0, 
                                      'brightness_range':None, 
@@ -330,7 +316,7 @@ if (__name__) == '__main__':
                  'stride':1,
                  'start_index':0,
                  'end_index':None,
-                 'shuffle':True,
+                 'shuffle':False,
                  'reverse':False,
                  'batch_size':5,
                  'image_dimention' : (160,320),
@@ -345,7 +331,7 @@ if (__name__) == '__main__':
     data_dir = '/home/pt/Desktop/debug_data'
     driving_log_csv = data_dir + '/' + 'driving_log.csv'
     driving_log = custom_utils.update_driving_log(data_dir, driving_log_csv)
-
+    driving_log = driving_log.reset_index()
 
     generator = MultiSensorTimeSeriesGenerator([driving_log['center'], driving_log['left'], driving_log['right']], driving_log['steering'], **batch_generator_params)
     

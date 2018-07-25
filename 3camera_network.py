@@ -1,35 +1,188 @@
-import wget, shutil, os, sys 
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Jul 25 10:22:25 2018
 
-google_drive = '/home/pt/Desktop/fake_google_drive'
-sys.path.insert(0, '/home/pt/repository/Auto-Downloader/Code') 
-from AutoDownloader import AutoDownloader
-auto_dl = AutoDownloader(local_timezone =  'Asia/Kolkata')
+@author: pt
+"""
 
-auto_dl.recursively_add_to_path('/home/pt/repository/deep_learning_car') #Warning: Do not add code recursively if you dont trust the source.
-project_dir = ('/home/pt/Desktop/fake_colab/Deep_Learning')
 
+# coding: utf-8
+
+# In[1]:
+
+#compute modes: colab, google_cloud, local_dev
+compute_mode = 'local_dev'
+
+if compute_mode == 'colab':
+    google_drive = '/content/google_drive'
+    project_dir = '/content/Deep_Learning'
+    script_dir = '/content/scripts'
+    download_code = True
+    download_data = True
+    
+elif compute_mode == 'google_cloud':
+    google_drive = '/home/pt/fake_google_drive'
+    script_dir = '/home/pt/scripts'
+    project_dir = '/home/pt/Deep_Learning_nvidia'
+    download_code = True
+    download_data = True
+    
+elif compute_mode == 'local_dev':
+    google_drive = '/home/pt/fake_google_drive'
+    script_dir = '/home/pt/scripts'
+    project_dir = '/home/pt/repository/deep_learning_car'
+    auto_downloader_dir = '/home/pt/repository/Auto-Downloader/Code'
+    data_dir = '/home/pt/Desktop/debug_data/data'
+    code_dir = '/home/pt/repository/deep_learning_car/utils'
+    download_code = False
+    download_data = False
+    
+else:
+    print('Invalid compute mode')
+
+# In[2]:
+
+#========================================== 
+# Author: Pranav
+# If you find this code useful, 
+# please include this section and give 
+# credit to original author.  
+#==========================================
+
+
+import os
+
+if not os.path.isdir(google_drive):
+    os.makedirs(google_drive) 
+
+if (compute_mode == 'local_dev') or (compute_mode == 'google_cloud'):
+    import wget, shutil, sys 
+
+
+if compute_mode == 'colab':
+    get_ipython().system('pip install -q pydot')
+    get_ipython().system('pip install graphviz')
+
+    get_ipython().system('pip install wget')
+
+    import wget, shutil, sys 
+
+    setup_kaggle_token_from_google_drive = False
+
+
+
+    if os.path.isdir(script_dir):
+        shutil.rmtree(script_dir)
+    os.makedirs(script_dir)
+
+    os.chdir(script_dir)
+    script_url = 'https://raw.githubusercontent.com/therobotprogrammer/Auto-Downloader/master/Code/setup.sh'
+    wget.download(script_url, out = script_dir + '/setup.sh')
+
+    get_ipython().system('chmod +x setup.sh')
+    get_ipython().system('bash setup.sh')
+    get_ipython().system('clear')
+
+
+    # Download AutoDownloader
+
+    if not os.path.isdir(script_dir):
+        os.makedirs(script_dir)
+
+    if os.path.isfile(script_dir + '/AutoDownloader.py'):
+        os.remove(script_dir + '/AutoDownloader.py')
+
+    AutoDownloader_url = 'https://raw.githubusercontent.com/therobotprogrammer/Auto-Downloader/master/Code/AutoDownloader.py'
+    wget.download(AutoDownloader_url, out = script_dir + '/AutoDownloader.py')
+
+    sys.path.insert(0, script_dir) 
+
+    get_ipython().system('clear')
+
+    
+
+    if os.path.isdir(google_drive):
+      print('Google drive previously mounted.')
+
+    else:
+
+        # To mount Google Drive
+      from google.colab import auth
+      auth.authenticate_user()
+      from oauth2client.client import GoogleCredentials
+      print("Sometimes you may have to repeat verification process & enter new token")
+      creds = GoogleCredentials.get_application_default()
+      import getpass
+      get_ipython().system('google-drive-ocamlfuse -headless -id={creds.client_id} -secret={creds.client_secret} < /dev/null 2>&1 | grep URL')
+      vcode = getpass.getpass()
+      get_ipython().system('echo {vcode} | google-drive-ocamlfuse -headless -id={creds.client_id} -secret={creds.client_secret}')
+
+      if not os.path.isdir(google_drive):
+        os.mkdir(google_drive)
+        get_ipython().system('google-drive-ocamlfuse' + '/content/google_drive')
+        print("Google Drive mounted at: " + google_drive)
+      else:
+        print("Google Drive already mounted at: " + google_drive)         
+
+      get_ipython().system('clear  ')
+
+    if setup_kaggle_token_from_google_drive == True:
+      # To get Kaggle token from Google Drive
+      from googleapiclient.discovery import build
+      import io, os
+      from googleapiclient.http import MediaIoBaseDownload
+      from google.colab import auth
+
+      auth.authenticate_user()
+      drive_service = build('drive', 'v3')
+      results = drive_service.files().list(
+              q="name = 'kaggle.json'", fields="files(id)").execute()
+      kaggle_api_key = results.get('files', [])
+
+      filename = "/content/.kaggle/kaggle.json"
+      os.makedirs(os.path.dirname(filename), exist_ok=True)
+
+      request = drive_service.files().get_media(fileId=kaggle_api_key[0]['id'])
+      fh = io.FileIO(filename, 'wb')
+      downloader = MediaIoBaseDownload(fh, request)
+      done = False
+      while done is False:
+          status, done = downloader.next_chunk()
+          print("Download Kaggle authentication token from Google Drive %d%%." % int(status.progress() * 100))
+          print("Done setting up Kaggle authentication token")
+      os.chmod(filename, 600)  
+
+
+    print('Setup Complete !!!')
+
+# In[3]:
 
 
 # Download AutoDownloader
-script_dir = '/home/pt/Desktop/fake_colab/scripts'
-if not os.path.isdir(script_dir):
-    os.mkdir(script_dir)
+if (compute_mode == 'google_cloud') or (compute_mode == 'colab'):   
+    if not os.path.isdir(script_dir):
+        os.makedirs(script_dir)
+        
+    if os.path.isfile(script_dir + '/AutoDownloader.py'):
+        os.remove(script_dir + '/AutoDownloader.py')
     
-if os.path.isfile(script_dir + '/AutoDownloader.py'):
-    os.remove(script_dir + '/AutoDownloader.py')
-
-AutoDownloader_url = 'https://raw.githubusercontent.com/therobotprogrammer/Auto-Downloader/master/Code/AutoDownloader.py'
-wget.download(AutoDownloader_url, out = script_dir + '/AutoDownloader.py')
-
-sys.path.insert(0, script_dir) 
-
-#######################################################################
-
-
+    AutoDownloader_url = 'https://raw.githubusercontent.com/therobotprogrammer/Auto-Downloader/master/Code/AutoDownloader.py'
+    wget.download(AutoDownloader_url, out = script_dir + '/AutoDownloader.py')
+    sys.path.insert(0, script_dir) 
+    
+elif compute_mode == 'local_dev':
+    sys.path.insert(0, auto_downloader_dir)
+    
+else:
+    print('Invalid compute mode')
 
 
-'''
-project_dir = ('/home/pt/Desktop/fake_colab/Deep_Learning')
+# In[4]:
+print('Project dir: ' + project_dir)
+
+if not project_dir:
+    os.makedirs(project_dir)
 
 #    /COMMON_UTILS is a special directory. All its contents are deleted & downloaded for latest copy. 
 #    Use it for dependencies
@@ -40,28 +193,46 @@ project_dir = ('/home/pt/Desktop/fake_colab/Deep_Learning')
 
 
 #These are relative paths
-common_utils_dir = '/COMMON_UTILS'
-
-data_to_download =  {    
+if (compute_mode == 'google_cloud') or (compute_mode == 'colab'):       
+    common_utils_dir = '/COMMON_UTILS'
+    data_sub_dir = '/DATA'
+    code_sub_dir = '/CODE'
     
-    '/DATA':                       [
-                                        'https://d17h27t6h515a5.cloudfront.net/topher/2016/December/584f6edd_data/data.zip'
-                                   ],
-
+    data_to_download =  {    
+        
+        data_sub_dir:                       [
+                                            'https://d17h27t6h515a5.cloudfront.net/topher/2016/December/584f6edd_data/data.zip'
+                                       ],
     
-    '/COMMON_UTILS':              [
-                                        
-                                   ],
     
-                    }
-
-
+        code_sub_dir:                      [
+                                            'https://github.com/therobotprogrammer/deep_learning_car/archive/master.zip',                                        
+                                       ],
+        
+        common_utils_dir:              [
+                                            
+                                       ],
+        
+                        }
+    
+    
+    if download_code == False:
+        del data_to_download[code_sub_dir]
+    if download_data == False:
+        del data_to_download[data_sub_dir]
 
 
 from AutoDownloader import AutoDownloader
 auto_dl = AutoDownloader(local_timezone =  'Asia/Kolkata')
-auto_dl.initiate(project_dir, data_to_download, recreate_dir = True )
-auto_dl.recursively_add_to_path(project_dir + '/CODE') #Warning: Do not add code recursively if you dont trust the source.
+if(download_code or download_data): 
+    auto_dl.initiate(project_dir, data_to_download, recreate_dir = True )
+    data_subdir = data_sub_dir.split('/')[-1].split('.zip')[0]    
+    data_dir = project_dir + '/' + data_subdir + '/data'
+    code_dir = project_dir + '/' + code_sub_dir
+
+auto_dl.recursively_add_to_path(code_dir ) #Warning: Do not add code recursively if you dont trust the source.
+
+ 
 
 
 # Push Notifications
@@ -78,12 +249,15 @@ auto_dl.send_notification('Hello form Colab!!!')
 #To get localtime as string
 #auto_dl.get_time_string()
 
-'''
 
-######################################################################
+
+# In[5]:
+
 from model_load_and_save import model_load_and_save
 
 model_save_top_directory = google_drive + '/deep_learning/01_Self_Driving_Car_Nvidia_Paper/saved_models' 
+#model_save_top_directory = '~/my_deep_learning/01_Self_Driving_Car_Nvidia_Paper/saved_models' 
+
 
 save_load_params = {
                             'continue_training_last_model' : False,
@@ -91,22 +265,25 @@ save_load_params = {
                    }
 
 model_saver = model_load_and_save(model_save_top_directory, **save_load_params)
-###########################
+print('log file: ' + model_saver.csv_save_file)
 
-
-
-
+# In[7]:
 from keras.models import Model
-from keras.layers import Input,Dense, Lambda, concatenate, Dropout, Conv2D, Flatten
+from keras.layers import Input,Dense, Lambda, concatenate, SeparableConv1D, MaxPooling1D, Dropout, Conv2D, Flatten
+from IPython.display import SVG
 from keras.utils.vis_utils import model_to_dot
 from keras.utils import plot_model
-#from sklearn.model_selection import train_test_split #to split out training and testing data 
-from keras.callbacks import ModelCheckpoint, EarlyStopping, CSVLogger, TensorBoard
+from sklearn.model_selection import train_test_split #to split out training and testing data 
+from keras.callbacks import ModelCheckpoint, EarlyStopping, CSVLogger, TensorBoard, ReduceLROnPlateau
 from keras.optimizers import Adam
-from IPython.display import SVG
+
+import os
 
 
+import sys
 
+
+#utils_dir = project_dir + '/CODE/deep_learning_car-master/utils'
 import custom_utils as custom_utils
 from MultiSensorTimeSeriesGenerator import MultiSensorTimeSeriesGenerator
 
@@ -193,7 +370,7 @@ def get_sensor_count_and_input_shape(sample_generator):
 model_params = {
             'train_to_test_split_ratio' : .8,
             'random_seed' : 0,
-            'learning_rate': 1.0e-5,
+            'learning_rate': 1.0e-4,
             'epochs': 1000
         }
 
@@ -213,7 +390,6 @@ batch_generator_params = {
 
 
 
-data_dir = project_dir + '/DATA/data'
 driving_log_csv = data_dir + '/' + 'driving_log.csv'
 driving_log = custom_utils.update_driving_log(data_dir, driving_log_csv)
 
@@ -232,7 +408,7 @@ validation_batch_generator_params = batch_generator_params
 validation_batch_generator_params['batch_size'] = 16
 validation_generator = MultiSensorTimeSeriesGenerator([driving_log_validation['center'], driving_log_validation['left'], driving_log_validation['right']], driving_log_validation['steering'], **validation_batch_generator_params)
 
-show_sample_from_generator(train_generator, batch_generator_params)
+#show_sample_from_generator(train_generator, batch_generator_params)
 
 sensor_count, input_shape = get_sensor_count_and_input_shape(train_generator)
 
@@ -243,15 +419,16 @@ else:
     model = build_nvidia_paper_model(sensor_count, input_shape)
 
 
-show_model(model)
+#show_model(model)
 
 
 #callbacks
-save_weights = ModelCheckpoint(filepath=model_saver.model_save_file, monitor='val_loss', verbose =3, save_best_only=True, mode='auto')
-csv_logger = CSVLogger(model_saver.csv_save_file, append = True)
-#tensorboard = TensorBoard(log_dir=model_saver.tensorboard_log_dir, histogram_freq=0, write_graph=True, write_images=True)
-#callbacks = [save_weights, csv_logger, tensorboard]
-callbacks = [save_weights, csv_logger]
+callbacks = []
+callbacks.append(ModelCheckpoint(filepath=model_saver.model_save_file, monitor='val_loss', verbose =0, save_best_only=True, mode='auto'))
+callbacks.append(CSVLogger(model_saver.csv_save_file, append = True))
+if (compute_mode == 'colab') or (compute_mode=='google_cloud'):
+	callbacks.append(TensorBoard(log_dir=model_saver.tensorboard_log_dir, histogram_freq=0, write_graph=True, write_images=True))
+callbacks.append(ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=20, min_lr=1.0e-6))
 #push_notification = auto_dl.send_notification('Training')
 
 
@@ -260,20 +437,7 @@ model.fit_generator(generator=train_generator, validation_data = validation_gene
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+# In[8]:
 
 
 

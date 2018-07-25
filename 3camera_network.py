@@ -276,6 +276,8 @@ from keras.utils import plot_model
 from sklearn.model_selection import train_test_split #to split out training and testing data 
 from keras.callbacks import ModelCheckpoint, EarlyStopping, CSVLogger, TensorBoard, ReduceLROnPlateau
 from keras.optimizers import Adam
+from keras.preprocessing import image
+
 
 import os
 
@@ -292,7 +294,7 @@ def show_sample_from_generator(generator, batch_generator_params):
     generator = train_generator
     iterator = generator.__iter__()
     batch = next(iterator)
-    custom_utils.show_batch(batch, batch_generator_params, figsize=(15, 3))
+    custom_utils.show_batch(batch, batch_generator_params)
 
 
 #Q Why this notmalisation
@@ -366,27 +368,56 @@ def get_sensor_count_and_input_shape(sample_generator):
 
     
     
+image_generator_params =    {   
+                                 'featurewise_center':False, 
+                                 'samplewise_center':False, 
+                                 'featurewise_std_normalization':False, 
+                                 'samplewise_std_normalization':False, 
+                                 'zca_whitening':False, 
+                                 'zca_epsilon':1e-06, 
+                                 'rotation_range':20.0, 
+                                 'width_shift_range':0.0, 
+                                 'height_shift_range':0.0, 
+                                 'brightness_range':None, 
+                                 'shear_range':0.0, 
+                                 'zoom_range':0.0, 
+                                 'channel_shift_range':0.0, 
+                                 'fill_mode':'nearest', 
+                                 'cval':0.0, 
+                                 'horizontal_flip':True, 
+                                 'vertical_flip':False, 
+                                 'rescale':None, 
+                                 'preprocessing_function':None, 
+                                 'data_format':None, 
+                                 'validation_split':0.0
+                             }
+image_data_gen_obj = image.ImageDataGenerator(**image_generator_params)
 
-model_params = {
-            'train_to_test_split_ratio' : .8,
-            'random_seed' : 0,
-            'learning_rate': 1.0e-4,
-            'epochs': 1000
-        }
+
 
 batch_generator_params = {
-             'length' : 1,
-             'sampling_rate':1,
-             'stride':1,
-             'start_index':0,
-             'end_index':None,
-             'shuffle':True,
-             'reverse':False,
-             'batch_size':16,
-             'image_dimention' : (160,320),
-             'n_channels' : 3,
-             'time_axis':False
-         }
+                                 'length' : 1,
+                                 'sampling_rate':1,
+                                 'stride':1,
+                                 'start_index':0,
+                                 'end_index':None,
+                                 'shuffle':False,
+                                 'reverse':False,
+                                 'batch_size':5,
+                                 'image_dimention' : (160,320),
+                                 'n_channels' : 3,
+                                 'time_axis':False,
+                                 'image_data_gen_obj': image_data_gen_obj,
+                                 'swap_sensors_on_horizontal_flip': True
+                             }
+    
+
+model_params =              {
+                                'train_to_test_split_ratio' : .8,
+                                'random_seed' : 0,
+                                'learning_rate': 1.0e-4,
+                                'epochs': 1000
+                            }
 
 
 
@@ -408,7 +439,7 @@ validation_batch_generator_params = batch_generator_params
 validation_batch_generator_params['batch_size'] = 16
 validation_generator = MultiSensorTimeSeriesGenerator([driving_log_validation['center'], driving_log_validation['left'], driving_log_validation['right']], driving_log_validation['steering'], **validation_batch_generator_params)
 
-#show_sample_from_generator(train_generator, batch_generator_params)
+show_sample_from_generator(train_generator, batch_generator_params)
 
 sensor_count, input_shape = get_sensor_count_and_input_shape(train_generator)
 

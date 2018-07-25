@@ -98,6 +98,15 @@ class MultiSensorTimeSeriesGenerator(keras.utils.Sequence):
             
             multi_camera_tensor = self.__applyAugmentations(multi_camera_tensor, rows)
             
+        
+        #if non time series data is needed. This will work as a normal generator
+        if self.time_axis == False:
+            assert self.length == 1, 'Time axis is False but time series length is not 1'
+            
+            for sensor_index in range(0,self.n_sensors):
+                #Drop the time axis
+                multi_camera_tensor[sensor_index] = np.squeeze(multi_camera_tensor[sensor_index], axis=1)
+                
         return multi_camera_tensor, targets
     
     
@@ -151,7 +160,7 @@ class MultiSensorTimeSeriesGenerator(keras.utils.Sequence):
             for j, sample in enumerate(single_sensor_samples_batch, start = 0): 
                 transform = all_sensor_row_transforms[j]
                 
-                for t, image_at_timestep in enumerate(sample):    
+                for t, image_at_timestep in enumerate(sample, start = 0):    
                     image_at_timestep = self.image_data_gen_obj.apply_transform(image_at_timestep, transform)
                     
                     if use_batch_level_augmentation_flag:
@@ -171,7 +180,10 @@ class MultiSensorTimeSeriesGenerator(keras.utils.Sequence):
                     temp_row = np.copy(multi_camera_tensor[left_sensor_index][j])                    
                     multi_camera_tensor[left_sensor_index][j] = np.copy(multi_camera_tensor[right_sensor_index][j]) 
                     multi_camera_tensor[right_sensor_index][j] = np.copy(temp_row)
-                                  
+         
+                
+
+                       
         return multi_camera_tensor
 
 
@@ -206,11 +218,11 @@ class MultiSensorTimeSeriesGenerator(keras.utils.Sequence):
         
     def __get_batch_level_augmentation_flag(self):
         
-        if (image_data_gen_obj.featurewise_center or 
-            image_data_gen_obj.samplewise_center or 
-            image_data_gen_obj.featurewise_std_normalization or 
-            image_data_gen_obj.samplewise_std_normalization or 
-            image_data_gen_obj.zca_whitening):
+        if (self.image_data_gen_obj.featurewise_center or 
+            self.image_data_gen_obj.samplewise_center or 
+            self.image_data_gen_obj.featurewise_std_normalization or 
+            self.image_data_gen_obj.samplewise_std_normalization or 
+            self.image_data_gen_obj.zca_whitening):
             return True
         else:
             return False
@@ -256,12 +268,7 @@ class MultiSensorTimeSeriesGenerator(keras.utils.Sequence):
                 
         if self.reverse:
             single_sensor_samples_batch = single_sensor_samples_batch[:, ::-1, ...]
-        
-        #if non time series data is needed. This will work as a normal generator
-        if self.time_axis == False:
-            assert self.length == 1, 'Time axis is False but time series length is not 1'
-            #Drop the time axis            
-            single_sensor_samples_batch = np.squeeze(single_sensor_samples_batch, axis=1)
+
             
         return single_sensor_samples_batch, single_sensor_targets_batch   
  
@@ -311,7 +318,7 @@ if (__name__) == '__main__':
 
 
     batch_generator_params = {
-                 'length' : 5,
+                 'length' : 1,
                  'sampling_rate':1,
                  'stride':1,
                  'start_index':0,
@@ -321,14 +328,14 @@ if (__name__) == '__main__':
                  'batch_size':5,
                  'image_dimention' : (160,320),
                  'n_channels' : 3,
-                 'time_axis':True,
+                 'time_axis':False,
                  'image_data_gen_obj': image_data_gen_obj,
                  'swap_sensors_on_horizontal_flip': True
              }
     
     
     
-    data_dir = '/home/pt/Desktop/debug_data'
+    data_dir = '/home/pt/Desktop/debug_data/data'
     driving_log_csv = data_dir + '/' + 'driving_log.csv'
     driving_log = custom_utils.update_driving_log(data_dir, driving_log_csv)
     driving_log = driving_log.reset_index()

@@ -81,7 +81,7 @@ class MultiSensorTimeSeriesGenerator(keras.utils.Sequence):
             rows = np.arange(i, min(i + self.batch_size * self.stride, self.end_index + 1), self.stride)
             
             
-            all_sensor_transforms = self.__get_all_sensor_transforms(rows)
+            
                 
         multi_camera_tensor = []        
         
@@ -96,7 +96,7 @@ class MultiSensorTimeSeriesGenerator(keras.utils.Sequence):
             #Q: Dows this use twice the ram? May be significant for latge datasets
             #Q: Is it better to use a callback funciton here or just take image_data_gen_obj obj
             
-            multi_camera_tensor = self.__applyAugmentations(multi_camera_tensor, rows)
+            multi_camera_tensor, targets = self.__applyAugmentations(rows, multi_camera_tensor, targets)
             
         
         #if non time series data is needed. This will work as a normal generator
@@ -145,9 +145,9 @@ class MultiSensorTimeSeriesGenerator(keras.utils.Sequence):
     '''
         
 
-    def __applyAugmentations(self, multi_camera_tensor, rows):
+    def __applyAugmentations(self, rows, multi_camera_tensor, targets):
         all_sensor_row_transforms = self.__get_all_sensor_transforms(rows)
-        all_sensor_row_transforms = list(all_sensor_row_transforms.values())
+        all_sensor_row_transforms_list = list(all_sensor_row_transforms.values())
         
         use_batch_level_augmentation_flag = self.__get_batch_level_augmentation_flag()
 
@@ -155,10 +155,10 @@ class MultiSensorTimeSeriesGenerator(keras.utils.Sequence):
             single_sensor_samples_batch = multi_camera_tensor[sensor_index] 
             
             if use_batch_level_augmentation_flag:
-                sensor_image_data_gen_obj = self.__get_sensor_image_data_gen_obj
+                sensor_image_data_gen_obj = self.__get_sensor_image_data_gen_obj(single_sensor_samples_batch)
                 
             for j, sample in enumerate(single_sensor_samples_batch, start = 0): 
-                transform = all_sensor_row_transforms[j]
+                transform = all_sensor_row_transforms_list[j]
                 
                 for t, image_at_timestep in enumerate(sample, start = 0):    
                     image_at_timestep = self.image_data_gen_obj.apply_transform(image_at_timestep, transform)
@@ -168,28 +168,28 @@ class MultiSensorTimeSeriesGenerator(keras.utils.Sequence):
                     
                     multi_camera_tensor[sensor_index][ j, t] = image_at_timestep
 
-
         #To Do: Implement multiple swaps for multi camera
         if self.swap_sensors_on_horizontal_flip:
             left_sensor_index = 1
             right_sensor_index = 2
             
-            for j, transform in enumerate(all_sensor_row_transforms, start = 0):
+            for j, transform in enumerate(all_sensor_row_transforms_list, start = 0):
                 if transform['flip_horizontal']:
                     #Mpte we have to do deep copy here
                     temp_row = np.copy(multi_camera_tensor[left_sensor_index][j])                    
                     multi_camera_tensor[left_sensor_index][j] = np.copy(multi_camera_tensor[right_sensor_index][j]) 
                     multi_camera_tensor[right_sensor_index][j] = np.copy(temp_row)
          
-                
-
-                       
-        return multi_camera_tensor
+                    targets[j] = -targets[j]
 
 
+               
+        return multi_camera_tensor, targets
 
-    def __debug_show_row(self,temp_row):       
-        plt.figure(figsize=(25,25)) 
+
+
+    def debug_show_row(self,temp_row):       
+        plt.figure(figsize=(25,25)) #Floating point image RGB values must be in the 0..1 range.
         
         image_count = 1 
         
@@ -201,16 +201,18 @@ class MultiSensorTimeSeriesGenerator(keras.utils.Sequence):
             
         plt.show()
         
-        
     
     
     def __get_sensor_image_data_gen_obj(self,single_sensor_samples_batch):
         all_images_in_sensor_samples_batch = []
         
-        for j, sample in enumerate(single_sensor_samples_batch): 
+        for j, sample in enumerate(single_sensor_samples_batch, start = 0): 
             for image_at_timestep in sample:
                 all_images_in_sensor_samples_batch.append(image_at_timestep)
         
+        all_images_in_sensor_samples_batch = np.asarray(all_images_in_sensor_samples_batch)
+        self.debug_show_row(all_images_in_sensor_samples_batch)   
+
         sensor_image_data_gen_obj = self.image_data_gen_obj
         sensor_image_data_gen_obj.fit(all_images_in_sensor_samples_batch)
         return sensor_image_data_gen_obj
@@ -275,6 +277,11 @@ class MultiSensorTimeSeriesGenerator(keras.utils.Sequence):
 
 
 
+def show_sample_from_generator(generator, batch_generator_params):
+    iterator = generator.__iter__()
+    batch = next(iterator)
+    custom_utils.show_batch(batch, batch_generator_params)
+
 
 
 
@@ -290,28 +297,28 @@ if (__name__) == '__main__':
     #Q Note: this is different from Keras API. as they use zoom_range etc. Later this can be changed
     
     image_generator_params =    {   
-                                     'featurewise_center':False, 
-                                     'samplewise_center':False, 
-                                     'featurewise_std_normalization':False, 
-                                     'samplewise_std_normalization':False, 
-                                     'zca_whitening':False, 
-                                     'zca_epsilon':1e-06, 
-                                     'rotation_range':20.0, 
-                                     'width_shift_range':0.0, 
-                                     'height_shift_range':0.0, 
-                                     'brightness_range':None, 
-                                     'shear_range':0.0, 
-                                     'zoom_range':0.0, 
-                                     'channel_shift_range':0.0, 
-                                     'fill_mode':'nearest', 
-                                     'cval':0.0, 
-                                     'horizontal_flip':True, 
-                                     'vertical_flip':False, 
-                                     'rescale':None, 
-                                     'preprocessing_function':None, 
-                                     'data_format':None, 
-                                     'validation_split':0.0
-                                 }
+                                 'featurewise_center':False, 
+                                 'samplewise_center':False, 
+                                 'featurewise_std_normalization':False, 
+                                 'samplewise_std_normalization':False, 
+                                 'zca_whitening':False, 
+                                 'zca_epsilon':1e-06, 
+                                 'rotation_range':5.0, 
+                                 'width_shift_range':0.2, 
+                                 'height_shift_range':0.2, 
+                                 'brightness_range':None, 
+                                 'shear_range':0.1, 
+                                 'zoom_range':0.2, 
+                                 'channel_shift_range':0.2, 
+                                 'fill_mode':'nearest', 
+                                 'cval':0.0, 
+                                 'horizontal_flip':True, 
+                                 'vertical_flip':False, 
+                                 'rescale':None, 
+                                 'preprocessing_function':None, 
+                                 'data_format':None, 
+                                 'validation_split':0.0
+                             }
 
     
     image_data_gen_obj = keras.preprocessing.image.ImageDataGenerator(**image_generator_params)
@@ -343,8 +350,11 @@ if (__name__) == '__main__':
     generator = MultiSensorTimeSeriesGenerator([driving_log['center'], driving_log['left'], driving_log['right']], driving_log['steering'], **batch_generator_params)
     
     iterator = generator.__iter__()
-    batch = next(iterator)
-    custom_utils.show_batch(batch, batch_generator_params, save_dir = data_dir)
+    
+    for count in range(0,driving_log.shape[0]):
+        batch = next(iterator)
+        custom_utils.show_batch(batch, batch_generator_params, save_dir = '/home/pt/Desktop/debug_data/data/data_generator_files', file_name_prefix = str(count))
+        break
 
 
     

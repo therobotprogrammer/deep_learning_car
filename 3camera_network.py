@@ -291,7 +291,6 @@ from MultiSensorTimeSeriesGenerator import MultiSensorTimeSeriesGenerator
 
 
 def show_sample_from_generator(generator, batch_generator_params):
-    generator = train_generator
     iterator = generator.__iter__()
     batch = next(iterator)
     custom_utils.show_batch(batch, batch_generator_params)
@@ -375,13 +374,13 @@ image_generator_params =    {
                                  'samplewise_std_normalization':False, 
                                  'zca_whitening':False, 
                                  'zca_epsilon':1e-06, 
-                                 'rotation_range':20.0, 
-                                 'width_shift_range':0.0, 
-                                 'height_shift_range':0.0, 
+                                 'rotation_range':5.0, 
+                                 'width_shift_range':0.2, 
+                                 'height_shift_range':0.2, 
                                  'brightness_range':None, 
-                                 'shear_range':0.0, 
-                                 'zoom_range':0.0, 
-                                 'channel_shift_range':0.0, 
+                                 'shear_range':0.1, 
+                                 'zoom_range':0.2, 
+                                 'channel_shift_range':0.2, 
                                  'fill_mode':'nearest', 
                                  'cval':0.0, 
                                  'horizontal_flip':True, 
@@ -395,7 +394,7 @@ image_data_gen_obj = image.ImageDataGenerator(**image_generator_params)
 
 
 
-batch_generator_params = {
+batch_generator_params =    {
                                  'length' : 1,
                                  'sampling_rate':1,
                                  'stride':1,
@@ -436,7 +435,7 @@ driving_log_validation = driving_log_validation.reset_index()
 train_generator = MultiSensorTimeSeriesGenerator([driving_log_train['center'], driving_log_train['left'], driving_log_train['right']], driving_log_train['steering'], **batch_generator_params)
 
 validation_batch_generator_params = batch_generator_params
-validation_batch_generator_params['batch_size'] = 16
+validation_batch_generator_params['batch_size'] = 64
 validation_generator = MultiSensorTimeSeriesGenerator([driving_log_validation['center'], driving_log_validation['left'], driving_log_validation['right']], driving_log_validation['steering'], **validation_batch_generator_params)
 
 show_sample_from_generator(train_generator, batch_generator_params)

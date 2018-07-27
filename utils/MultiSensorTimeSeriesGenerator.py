@@ -74,8 +74,13 @@ class MultiSensorTimeSeriesGenerator(keras.utils.Sequence):
         all_sensor_transforms = {}           
 
         if self.shuffle:
+            #Q: we have to have replace = False for dicitonary of rows to work. Also thread safety maybe?
+            rows = np.random.choice(range(self.start_index, self.end_index + 1), size=self.batch_size, replace=False)
+            
+            '''
             rows = np.random.randint(
                 self.start_index, self.end_index + 1, size=self.batch_size)
+            '''
         else:
             i = self.start_index + self.batch_size * self.stride * index
             rows = np.arange(i, min(i + self.batch_size * self.stride, self.end_index + 1), self.stride)
@@ -330,9 +335,9 @@ if (__name__) == '__main__':
                  'stride':1,
                  'start_index':0,
                  'end_index':None,
-                 'shuffle':False,
+                 'shuffle':True,
                  'reverse':False,
-                 'batch_size':5,
+                 'batch_size':64,
                  'image_dimention' : (160,320),
                  'n_channels' : 3,
                  'time_axis':False,
@@ -342,7 +347,7 @@ if (__name__) == '__main__':
     
     
     
-    data_dir = '/home/pt/Desktop/debug_data/data'
+    data_dir = '/home/pt/Desktop/udacity_data/data'
     driving_log_csv = data_dir + '/' + 'driving_log.csv'
     driving_log = custom_utils.update_driving_log(data_dir, driving_log_csv)
     driving_log = driving_log.reset_index()
@@ -353,8 +358,8 @@ if (__name__) == '__main__':
     
     for count in range(0,driving_log.shape[0]):
         batch = next(iterator)
-        custom_utils.show_batch(batch, batch_generator_params, save_dir = '/home/pt/Desktop/debug_data/data/data_generator_files', file_name_prefix = str(count))
-        break
+        #custom_utils.show_batch(batch, batch_generator_params, save_dir = '/home/pt/Desktop/debug_data/data/data_generator_files', file_name_prefix = str(count))
+        print(str(count))
 
 
     

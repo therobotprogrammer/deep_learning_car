@@ -5,8 +5,26 @@ Created on Sat Jul 28 13:08:36 2018
 
 @author: pt
 """
+
+
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import os
+import csv
 import six
+
+import numpy as np
+
+from collections import OrderedDict
+from collections import Iterable
+
+try:
+    import requests
+except ImportError:
+    requests = None
+
 from keras.callbacks import Callback
 
 class colab_CSVLogger(Callback):
@@ -33,10 +51,10 @@ class colab_CSVLogger(Callback):
         self.keys = None
         self.append_header = True
         self.file_flags = 'b' if six.PY2 and os.name == 'nt' else ''
-        super(CSVLogger, self).__init__()
+        super(colab_CSVLogger, self).__init__()
 
     def on_train_begin(self, logs=None):
-
+        return
 
     def on_epoch_end(self, epoch, logs=None):
         if self.append:

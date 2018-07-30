@@ -28,7 +28,7 @@ except ImportError:
 from keras.callbacks import Callback
 
     
-class TensorBoard(Callback):
+class colab_TensorBoard(Callback):
     """TensorBoard basic visualizations.
     [TensorBoard](https://www.tensorflow.org/get_started/summaries_and_tensorboard)
     is a visualization tool provided with TensorFlow.

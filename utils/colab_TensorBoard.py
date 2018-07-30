@@ -1,30 +1,30 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Mon Jul 30 17:40:35 2018
+Created on Sat Jul 28 13:08:36 2018
 
 @author: pt
 """
-"""Callbacks: utilities called at certain points during model training.
-"""
+
+
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
 import os
+import csv
+import six
 
 import numpy as np
-import warnings
 
-
-from . import backend as K
-from .engine.training_utils import standardize_input_data
+from collections import OrderedDict
+from collections import Iterable
 
 try:
     import requests
 except ImportError:
     requests = None
-    
+
 from keras.callbacks import Callback
 
     

@@ -12,21 +12,27 @@ from __future__ import division
 from __future__ import print_function
 
 import os
-import csv
-import six
+
 
 import numpy as np
 
-from collections import OrderedDict
-from collections import Iterable
 
 try:
     import requests
 except ImportError:
     requests = None
 
-from keras.callbacks import Callback
 
+import warnings
+
+
+#from . import backend as K
+import keras.backend as K
+from keras.engine.training_utils import standardize_input_data
+#from .engine.training_utils import standardize_input_data
+
+
+from keras.callbacks import Callback
     
 class colab_TensorBoard(Callback):
     """TensorBoard basic visualizations.
@@ -87,7 +93,7 @@ class colab_TensorBoard(Callback):
                  embeddings_layer_names=None,
                  embeddings_metadata=None,
                  embeddings_data=None):
-        super(TensorBoard, self).__init__()
+        super(colab_TensorBoard, self).__init__()
         global tf, projector
         try:
             import tensorflow as tf

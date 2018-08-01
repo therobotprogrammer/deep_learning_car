@@ -29,31 +29,35 @@ model_save_top_directory = google_drive + '/deep_learning/01_Self_Driving_Car_Nv
 '''
 
 class model_load_and_save:
-    def __init__(self, model_save_top_directory, continue_training_last_model = True, create_time_stamped_dirs = True, local_timezone = 'Asia/Kolkata'):
+    def __init__(self, model_save_top_directory, continue_training_last_model = True, create_time_stamped_dirs = True, local_timezone = 'Asia/Kolkata', inference_mode = False):
         self.model_save_top_directory = model_save_top_directory
         self.continue_training_last_model = continue_training_last_model 
         self.create_time_stamped_dirs = create_time_stamped_dirs
         self.local_timezone = local_timezone
         self.model_loaded_sucessfully = False
-        self.initial_epoch = 0
-
+        self.initial_epoch = 0,
+        self.inference_mode = inference_mode
+        
         self.setup_paths()
+            
 
         
         
     def setup_paths(self):
                   
         self.model = None
-                 
-        if os.path.isdir(self.model_save_top_directory):
-            self.deep_cleanup(self.model_save_top_directory)
-        else:
-            os.makedirs(self.model_save_top_directory)
+        
+        if not self.inference_mode:         
+            if os.path.isdir(self.model_save_top_directory):
+                self.deep_cleanup(self.model_save_top_directory)
+            else:
+                os.makedirs(self.model_save_top_directory)
 
 
         model_save_directory = self.model_save_top_directory
         
-        if self.continue_training_last_model == True:
+        
+        if (self.continue_training_last_model) == True or (self.inference_mode == True):
           last_model_dir = self.getlastmodeldir(self.model_save_top_directory) #assumes sub dir names are appended with time strings
           if last_model_dir == None:
             self.continue_training_last_model = False
@@ -79,7 +83,7 @@ class model_load_and_save:
                 print('>>> No saved models found. A new model will be trained')
                 self.continue_training_last_model = False  
             
-        if self.continue_training_last_model == False:
+        if (self.continue_training_last_model == False) and (self.inference_mode == False):
             if self.create_time_stamped_dirs:
                 model_save_directory =  self.model_save_top_directory + '/' + self.get_time_string()
             else:
@@ -100,7 +104,7 @@ class model_load_and_save:
         
         self.model_save_file = os.path.join(model_save_directory, 'weights-{epoch:02d}-{val_loss:.2f}.h5' )
         self.csv_save_file = os.path.join(model_save_directory, 'log.csv')
-
+        self.working_directory = model_save_directory
         self.tensorboard_log_dir = model_save_directory
        
         '''
@@ -228,5 +232,68 @@ class model_load_and_save:
         time_string = year + '-' + month + '-' + day + '-' + hour + '-' + minute
         return(time_string)
         
+        
+
+    def get_files_of_type(self, directory, file_type):    
+        
+        files = glob(directory + '/*.' + file_type) 
+        files = sorted(files)            
+        
+        if files == []:           
+            return None
+        
+        return files
+
+    
+    def __get_filename_from_epoch_lookup(self,split_char_in_filename = '-'):
+        all_files = self.get_files_of_type(self.working_directory, 'h5')
+        lookup = {}
+        
+        for file in all_files:
+            directory, filename = os.path.split(file)
+            epoch = filename.split(split_char_in_filename)[1]
+            lookup[epoch] = file
+        return lookup
+    
+    
+    def get_n_best_models(self, N = 1):
+        #try:
+       
+        best_epochs_pd = pd.read_csv('/home/pt/fake_google_drive/deep_learning/01_Self_Driving_Car_Nvidia_Paper/saved_models/2018-7-28-19-55/log.csv')
+        if N >= best_epochs_pd.shape[0]:
+            N = best_epochs_pd.shape[0]  
+            
+        best_epochs_pd = best_epochs_pd.sort_values('val_loss')
+        best_epochs_pd = best_epochs_pd.iloc[0:N,]
+        best_epochs_pd = best_epochs_pd.reset_index(drop = True)
+        filename_from_epoch_lookup = self.__get_filename_from_epoch_lookup()
+        
+        for index, epoch in enumerate(best_epochs_pd['epoch']):
+            filename = filename_from_epoch_lookup[str(epoch)]
+            best_epochs_pd.loc[[index], 'file_name'] = filename
+            best_epochs_pd.loc[[index], 'model'] = load_model(filename)
+        
+        return best_epochs_pd   
+    
+if (__name__) == '__main__':
+     
+    google_drive = '/home/pt/fake_google_drive'
+
+    
+    model_save_top_directory = google_drive + '/deep_learning/01_Self_Driving_Car_Nvidia_Paper/saved_models' 
+    #model_save_top_directory = '~/my_deep_learning/01_Self_Driving_Car_Nvidia_Paper/saved_models' 
+    
+    
+    save_load_params = {
+                                'inference_mode': True,
+                                'continue_training_last_model' : True,
+                                'create_time_stamped_dirs' : True                                
+                       }
+    
+    model_saver = model_load_and_save(model_save_top_directory, **save_load_params)
+    print('log file: ' + model_saver.csv_save_file)  
+
+    best_model = model_saver.get_n_best_models(1)    
+    
 #t = model_load_and_save(model_save_top_directory, **save_load_params)
 #t.csv_save_file

@@ -69,7 +69,7 @@ class SimplePIController:
     
     
 controller = SimplePIController(0.01, 0)
-set_speed = 15
+set_speed = 5
 controller.set_desired(set_speed)
 
 
@@ -108,6 +108,8 @@ def telemetry(sid, data):
             plt.show()
             '''
 
+            #steering_angle = float(model.predict([image, image_left_front, image_right_front], batch_size=1))
+            #steering_angle = steering_angle[0]
             #image = utils.preprocess(image) # apply the preprocessing
             #image = np.array([image])       # the model expects 4D array
 
@@ -116,6 +118,7 @@ def telemetry(sid, data):
             # lower the throttle as the speed increases
             # if the speed is above the current speed limit, we are on a downhill.
             # make sure we slow down first and then go back to the original max speed.
+            #steering_angle = -.5
             '''
             global speed_limit
             if speed > speed_limit:
@@ -124,8 +127,8 @@ def telemetry(sid, data):
                 speed_limit = MAX_SPEED
             throttle = 1.0 - steering_angle**2 - (speed/speed_limit)**2
             '''
-            throttle = controller.update(float(7))
-
+            throttle = controller.update(speed)
+            #steering_angle = steering_angle - 1
             #throttle = 0
             print('{} {} {}'.format(steering_angle, throttle, speed))
             send_control(steering_angle, throttle)
@@ -133,10 +136,12 @@ def telemetry(sid, data):
             print(e)
 
         # save frame
+        '''
         if args.image_folder != '':
             timestamp = datetime.utcnow().strftime('%Y_%m_%d_%H_%M_%S_%f')[:-3]
             image_filename = os.path.join(args.image_folder, timestamp)
             image.save('{}.jpg'.format(image_filename))
+        '''
     else:
         
         sio.emit('manual', data={}, skip_sid=True)
@@ -161,7 +166,7 @@ def send_control(steering_angle, throttle):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Remote Driving')
     
-    default_model = '/home/pt/Desktop/fake_google_drive/deep_learning/01_Self_Driving_Car_Nvidia_Paper/saved_models/2018-7-14-22-6/weights-46-0.01.h5'
+    default_model = '/home/pt/Downloads/weights-37-0.01.h5'
     default_image_folder = '/home/pt/Desktop/fake_google_drive/deep_learning/run'
     
     

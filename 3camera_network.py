@@ -241,7 +241,7 @@ token ="aev81xsojcq2ggdpevsia5rzuw5x12"
 auto_dl.setup_pushover_credintials(user_key,token)
 
 #To send push notificaiton:
-auto_dl.send_notification('Hello form Colab!!!')
+#auto_dl.send_notification('Hello form Colab!!!')
 
 # To see any directory  
 #auto_dl.showDirectory(project_dir + '/CODE') 
@@ -254,6 +254,8 @@ auto_dl.send_notification('Hello form Colab!!!')
 # In[5]:
 
 from model_load_and_save import model_load_and_save
+from colab_CSVLogger import colab_CSVLogger
+
 
 model_save_top_directory = google_drive + '/deep_learning/01_Self_Driving_Car_Nvidia_Paper/saved_models' 
 #model_save_top_directory = '~/my_deep_learning/01_Self_Driving_Car_Nvidia_Paper/saved_models' 
@@ -269,7 +271,7 @@ print('log file: ' + model_saver.csv_save_file)
 
 # In[7]:
 from keras.models import Model
-from keras.layers import Input,Dense, Lambda, concatenate, SeparableConv1D, MaxPooling1D, Dropout, Conv2D, Flatten
+from keras.layers import Input,Dense, Lambda, concatenate, SeparableConv1D, MaxPooling1D, Dropout, Conv2D, Flatten, BatchNormalization, ELU
 from IPython.display import SVG
 from keras.utils.vis_utils import model_to_dot
 from keras.utils import plot_model
@@ -277,12 +279,13 @@ from sklearn.model_selection import train_test_split #to split out training and 
 from keras.callbacks import ModelCheckpoint, EarlyStopping, CSVLogger, TensorBoard, ReduceLROnPlateau
 from keras.optimizers import Adam
 from keras.preprocessing import image
-
+import keras
 
 import os
 
 
 import sys
+
 
 
 #utils_dir = project_dir + '/CODE/deep_learning_car-master/utils'
@@ -294,6 +297,7 @@ def show_sample_from_generator(generator, batch_generator_params):
     iterator = generator.__iter__()
     batch = next(iterator)
     custom_utils.show_batch(batch, batch_generator_params)
+    return batch
 
 
 #Q Why this notmalisation
@@ -301,8 +305,8 @@ def image_normalization(x):
     return ( (x/127.5) - 1.0 )
     
 #To Do: Verify if Lambda is correctly used
-def build_single_sensor_network(sensor_input):    
-    x = Lambda(image_normalization)(sensor_input)
+def build_single_sensor_network(x):    
+    #x = Lambda(image_normalization)(x)
     #x = Dense(32)(x)
     return x
 
@@ -310,7 +314,7 @@ def show_model(model):
     display(SVG(model_to_dot(model, show_shapes=True).create(prog='dot', format='svg')))
 
 
-def build_nvidia_paper_model(sensor_count, single_sensor_input_shape):
+def build_nvidia_paper_model(sensor_count, single_sensor_input_shape, overfit_training = False):
     
     sensor_inputs = []
     sensor_outputs = []
@@ -328,17 +332,52 @@ def build_nvidia_paper_model(sensor_count, single_sensor_input_shape):
         
 
     x = concatenate(sensor_outputs)
-    x = Conv2D(24, (5,5), strides=(2, 2), activation='elu')(x)
-    x = Conv2D(36, (5,5), strides=(2, 2), activation='elu')(x)
-    x = Conv2D(48, (5,5), strides=(2, 2), activation='elu')(x)
-    x = Conv2D(64, (5,5), activation='elu')(x)
-    x = Conv2D(64, (3,3), activation='elu')(x)
-    x = Dropout(.5)(x)
+    x = BatchNormalization()(x)
+    
+    x = Conv2D(72, (5,5), strides=(2, 2))(x)
+    x = BatchNormalization()(x)
+    x = ELU()(x)
+    
+    
+    x = Conv2D(108, (5,5), strides=(2, 2))(x)
+    x = BatchNormalization()(x)
+    x = ELU()(x)
+    
+    x = Conv2D(144, (5,5), strides=(2, 2))(x)
+    x = BatchNormalization()(x)
+    x = ELU()(x)
+    
+    x = Conv2D(192, (5,5), strides=(2, 2))(x)
+    x = BatchNormalization()(x)
+    x = ELU()(x)
+    
+    x = Conv2D(192, (3,3), strides=(2, 2))(x)
+    x = BatchNormalization()(x)
+    x = ELU()(x)
+
+
+
+    if overfit_training == False:
+      x = Dropout(.5)(x)
     x = Flatten()(x)
-    x = Dense(100, activation = 'elu')(x)
-    x = Dense(50, activation = 'elu')(x)
-    x = Dense(10, activation = 'elu')(x)
-    x = Dense(1, activation = 'elu')(x)
+    
+    x = Dense(300)(x)
+    x = ELU()(x)
+    
+    x = Dense(150)(x)
+    x = ELU()(x)
+    
+    
+    x = Dense(30)(x)
+    x = ELU()(x)
+       
+    x = Dense(10)(x)
+    x = ELU()(x)
+    
+    x = Dense(3)(x)
+    x = ELU()(x)
+
+    x = Dense(1, activation = 'tanh')(x)
     
     
     #x = SeparableConv1D(5,1)(x)
@@ -374,12 +413,12 @@ image_generator_params =    {
                                  'samplewise_std_normalization':False, 
                                  'zca_whitening':False, 
                                  'zca_epsilon':1e-06, 
-                                 'rotation_range':5.0, 
-                                 'width_shift_range':0.2, 
-                                 'height_shift_range':0.2, 
+                                 'rotation_range':10.0, 
+                                 'width_shift_range':0.1, 
+                                 'height_shift_range':0.1, 
                                  'brightness_range':None, 
-                                 'shear_range':0.1, 
-                                 'zoom_range':0.2, 
+                                 'shear_range':10.0, 
+                                 'zoom_range':0.0, 
                                  'channel_shift_range':0.2, 
                                  'fill_mode':'nearest', 
                                  'cval':0.0, 
@@ -392,17 +431,19 @@ image_generator_params =    {
                              }
 image_data_gen_obj = image.ImageDataGenerator(**image_generator_params)
 
-
-
+overfit_training = False
+if overfit_training == True:
+  image_data_gen_obj = None
+  
 batch_generator_params =    {
                                  'length' : 1,
                                  'sampling_rate':1,
                                  'stride':1,
                                  'start_index':0,
                                  'end_index':None,
-                                 'shuffle':False,
+                                 'shuffle':True,
                                  'reverse':False,
-                                 'batch_size':5,
+                                 'batch_size':16,
                                  'image_dimention' : (160,320),
                                  'n_channels' : 3,
                                  'time_axis':False,
@@ -423,6 +464,7 @@ model_params =              {
 driving_log_csv = data_dir + '/' + 'driving_log.csv'
 driving_log = custom_utils.update_driving_log(data_dir, driving_log_csv)
 
+
 split_point = int(len(driving_log) * model_params['train_to_test_split_ratio'])
 driving_log_train = driving_log[0:split_point]
 driving_log_validation = driving_log[split_point + batch_generator_params['length'] * 2:] # length*2 so that car has moved far away from train data spot
@@ -435,36 +477,42 @@ driving_log_validation = driving_log_validation.reset_index()
 train_generator = MultiSensorTimeSeriesGenerator([driving_log_train['center'], driving_log_train['left'], driving_log_train['right']], driving_log_train['steering'], **batch_generator_params)
 
 validation_batch_generator_params = batch_generator_params
-validation_batch_generator_params['batch_size'] = 64
+validation_batch_generator_params['batch_size'] = 16
+validation_batch_generator_params['image_data_gen_obj'] = None
 validation_generator = MultiSensorTimeSeriesGenerator([driving_log_validation['center'], driving_log_validation['left'], driving_log_validation['right']], driving_log_validation['steering'], **validation_batch_generator_params)
 
-show_sample_from_generator(train_generator, batch_generator_params)
+sample_batch = show_sample_from_generator(train_generator, batch_generator_params)
 
 sensor_count, input_shape = get_sensor_count_and_input_shape(train_generator)
 
 
 if model_saver.continue_training_last_model and model_saver.model_loaded_sucessfully:
-    model = model_saver.model
+    model = model_saver.last_model
 else:
-    model = build_nvidia_paper_model(sensor_count, input_shape)
+    model = build_nvidia_paper_model(sensor_count, input_shape, overfit_training)
 
 
-#show_model(model)
-
+show_model(model)
 
 #callbacks
 callbacks = []
-callbacks.append(ModelCheckpoint(filepath=model_saver.model_save_file, monitor='val_loss', verbose =0, save_best_only=True, mode='auto'))
-callbacks.append(CSVLogger(model_saver.csv_save_file, append = True))
+if overfit_training == True:
+  callbacks.append(CSVLogger(model_saver.csv_save_file, append = True))
+else:
+  callbacks.append(ModelCheckpoint(filepath=model_saver.model_save_file, monitor='val_loss',  save_best_only=False, mode='auto'))
+  callbacks.append(colab_CSVLogger(model_saver.csv_save_file, append = True))
 if (compute_mode == 'colab') or (compute_mode=='google_cloud'):
-	callbacks.append(TensorBoard(log_dir=model_saver.tensorboard_log_dir, histogram_freq=0, write_graph=True, write_images=True))
-callbacks.append(ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=20, min_lr=1.0e-6))
+	callbacks.append(colab_TensorBoard(log_dir=model_saver.tensorboard_log_dir, write_images=True, histogram_freq = 1, write_grads = True, write_graph = True, batch_size = validation_batch_generator_params['batch_size'] ))
+callbacks.append(ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=3, min_lr=1.0e-16))
 #push_notification = auto_dl.send_notification('Training')
 
 
 model.compile(optimizer= Adam(lr=model_params['learning_rate']), loss='mean_squared_error')
-model.fit_generator(generator=train_generator, validation_data = validation_generator, epochs = model_params['epochs'], initial_epoch = model_saver.initial_epoch, callbacks = callbacks, use_multiprocessing = False  )
 
+if overfit_training == True:
+  model.fit(x=sample_batch[0], y=sample_batch[1], epochs = model_params['epochs']*1,  callbacks = callbacks, verbose=2, validation_split = .2 )
+else:
+  model.fit_generator(generator=train_generator, validation_data = validation_generator, epochs = model_params['epochs'], initial_epoch = model_saver.initial_epoch, callbacks = callbacks, use_multiprocessing = False, verbose=1  )
 
 
 # In[8]:

@@ -26,7 +26,8 @@ class MultiSensorTimeSeriesGenerator(keras.utils.Sequence):
                  time_axis = True,
                  seed = None,
                  image_data_gen_obj = None,
-                 swap_sensors_on_horizontal_flip = False
+                 swap_sensors_on_horizontal_flip = False,
+                 predict_generator_mode = False
                  ):
         
         self.multi_sensor_data = multi_sensor_data
@@ -50,7 +51,7 @@ class MultiSensorTimeSeriesGenerator(keras.utils.Sequence):
 
         self.image_data_gen_obj = image_data_gen_obj
         self.swap_sensors_on_horizontal_flip = swap_sensors_on_horizontal_flip
-
+        self.predict_generator_mode = predict_generator_mode
 
         if self.start_index > self.end_index:
             raise ValueError('`start_index+length=%i > end_index=%i` '
@@ -188,8 +189,10 @@ class MultiSensorTimeSeriesGenerator(keras.utils.Sequence):
                     targets[j] = -targets[j]
 
 
-               
-        return multi_camera_tensor, targets
+        if self.predict_generator_mode == False:       
+            return multi_camera_tensor, targets
+        else:
+            return multi_camera_tensor
 
 
 
@@ -308,13 +311,13 @@ if (__name__) == '__main__':
                                  'samplewise_std_normalization':False, 
                                  'zca_whitening':False, 
                                  'zca_epsilon':1e-06, 
-                                 'rotation_range':5.0, 
-                                 'width_shift_range':0.2, 
-                                 'height_shift_range':0.2, 
+                                 'rotation_range':20.0, 
+                                 'width_shift_range':0.0, 
+                                 'height_shift_range':0.0, 
                                  'brightness_range':None, 
-                                 'shear_range':0.1, 
-                                 'zoom_range':0.2, 
-                                 'channel_shift_range':0.2, 
+                                 'shear_range':00.0, 
+                                 'zoom_range':0.0, 
+                                 'channel_shift_range':0.3, 
                                  'fill_mode':'nearest', 
                                  'cval':0.0, 
                                  'horizontal_flip':True, 
@@ -337,12 +340,13 @@ if (__name__) == '__main__':
                  'end_index':None,
                  'shuffle':True,
                  'reverse':False,
-                 'batch_size':64,
+                 'batch_size':5,
                  'image_dimention' : (160,320),
                  'n_channels' : 3,
                  'time_axis':False,
                  'image_data_gen_obj': image_data_gen_obj,
-                 'swap_sensors_on_horizontal_flip': True
+                 'swap_sensors_on_horizontal_flip': True,
+                 'predict_generator_mode': False
              }
     
     
@@ -358,8 +362,9 @@ if (__name__) == '__main__':
     
     for count in range(0,driving_log.shape[0]):
         batch = next(iterator)
-        #custom_utils.show_batch(batch, batch_generator_params, save_dir = '/home/pt/Desktop/debug_data/data/data_generator_files', file_name_prefix = str(count))
+        custom_utils.show_batch(batch, batch_generator_params, save_dir = '/home/pt/Desktop/debug_data/data/data_generator_files', file_name_prefix = str(count))
         print(str(count))
+        break
 
 
     

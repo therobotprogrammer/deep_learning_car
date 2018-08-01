@@ -44,7 +44,7 @@ def update_driving_log(data_dir, driving_log_csv = None, relative_path = False):
     driving_log_pd.iloc[:,0:3] = driving_log_pd_temp      
     driving_log_pd.columns = ['center','left', 'right', 'steering','throttle','brake','speed']        
     driving_log_pd.to_csv(driving_log_csv, index = False, header = True)   
-    driving_log_pd = driving_log_pd.reset_index()  
+    driving_log_pd = driving_log_pd.reset_index(drop = True)  
     return driving_log_pd
 
 

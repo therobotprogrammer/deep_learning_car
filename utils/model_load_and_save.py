@@ -20,7 +20,7 @@ import pandas as pd
 
 
 save_load_params = {
-                            'continue_training_last_model' = True,
+                            'use_last_model' = True,
                             'create_time_stamped_directories' = True                                
                    }
 
@@ -29,14 +29,13 @@ model_save_top_directory = google_drive + '/deep_learning/01_Self_Driving_Car_Nv
 '''
 
 class model_load_and_save:
-    def __init__(self, model_save_top_directory, continue_training_last_model = True, create_time_stamped_dirs = True, local_timezone = 'Asia/Kolkata', inference_mode = False):
+    def __init__(self, model_save_top_directory, use_last_model = True, create_time_stamped_dirs = True, local_timezone = 'Asia/Kolkata', inference_mode = False):
         self.model_save_top_directory = model_save_top_directory
-        self.continue_training_last_model = continue_training_last_model 
+        self.use_last_model = use_last_model 
         self.create_time_stamped_dirs = create_time_stamped_dirs
         self.local_timezone = local_timezone
         self.model_loaded_sucessfully = False
         self.initial_epoch = 0,
-        self.inference_mode = inference_mode
         
         self.setup_paths()
             
@@ -47,7 +46,7 @@ class model_load_and_save:
                   
         self.model = None
         
-        if not self.inference_mode:         
+        if not self.use_last_model:         
             if os.path.isdir(self.model_save_top_directory):
                 self.deep_cleanup(self.model_save_top_directory)
             else:
@@ -57,33 +56,40 @@ class model_load_and_save:
         model_save_directory = self.model_save_top_directory
         
         
-        if (self.continue_training_last_model) == True or (self.inference_mode == True):
+        if (self.use_last_model) == True:
           last_model_dir = self.getlastmodeldir(self.model_save_top_directory) #assumes sub dir names are appended with time strings
           if last_model_dir == None:
-            self.continue_training_last_model = False
+            self.use_last_model = False
           else:
             model_save_directory = last_model_dir
             saved_model_filename = self.get_last_model(model_save_directory)
             saved_csv_save_file = self.get_last_file(model_save_directory, file_type = 'csv')
 
-            if saved_model_filename != None:
-                try:    
-                    self.model = load_model(saved_model_filename)      
-                    if not saved_csv_save_file == None:
-                        log_pd = pd.read_csv(saved_csv_save_file, header = 0)  
-                        self.initial_epoch = 1 + log_pd['epoch'].iloc[-1]  
-                    else:
-                        print('Saved CSV file not found or was invalid with size = 0 bytes. New CSV file will be created with staring epoch = 1')
-                    self.model_loaded_sucessfully = True
-                    print('>>> Previously saved model found. Training will continue from file: \n' + saved_model_filename) 
-                except OSError:
-                    print('>>> Error loading saved model. A new model will be trained')
-
-            else:
-                print('>>> No saved models found. A new model will be trained')
-                self.continue_training_last_model = False  
+            try: 
+                if saved_model_filename != None:                       
+                        self.model = load_model(saved_model_filename)  
+                        if self.model != None:
+                            self.model_loaded_sucessfully = True
+                        else:                            
+                            self.model_loaded_sucessfully = False
+                            raise(OSError) 
+                            
+                        if saved_csv_save_file != None:
+                            log_pd = pd.read_csv(saved_csv_save_file, header = 0)  
+                            self.initial_epoch = 1 + log_pd['epoch'].iloc[-1]                                                 
+                            print('>>> Previously saved model found. Training will continue from file: \n' + saved_model_filename) 
+                            print('Initial epoch: ' + str(self.initial_epoch))
+                        else:
+                            print('Saved CSV file not found or was invalid with size = 0 bytes. Creating new csv filename and setting initial_spoch to 1')
+                            self.initial_epoch = 1                
+    
+                else:
+                    print('>>> No saved models found.')
+                    raise(OSError)  
+            except OSError:
+                        print('>>> Error loading saved model.')
             
-        if (self.continue_training_last_model == False) and (self.inference_mode == False):
+        if self.use_last_model == False:
             if self.create_time_stamped_dirs:
                 model_save_directory =  self.model_save_top_directory + '/' + self.get_time_string()
             else:
@@ -257,9 +263,8 @@ class model_load_and_save:
     
     
     def get_n_best_models(self, N = 1):
-        #try:
-       
-        best_epochs_pd = pd.read_csv('/home/pt/fake_google_drive/deep_learning/01_Self_Driving_Car_Nvidia_Paper/saved_models/2018-7-28-19-55/log.csv')
+        #try:       
+        best_epochs_pd = pd.read_csv(self.csv_save_file)
         if N >= best_epochs_pd.shape[0]:
             N = best_epochs_pd.shape[0]  
             
@@ -268,12 +273,36 @@ class model_load_and_save:
         best_epochs_pd = best_epochs_pd.reset_index(drop = True)
         filename_from_epoch_lookup = self.__get_filename_from_epoch_lookup()
         
-        for index, epoch in enumerate(best_epochs_pd['epoch']):
-            filename = filename_from_epoch_lookup[str(epoch)]
-            best_epochs_pd.loc[[index], 'file_name'] = filename
-            best_epochs_pd.loc[[index], 'model'] = load_model(filename)
+        best_epochs_pd['model'] = None
+        best_epochs_pd['file_name'] = None
         
+        for index, epoch in enumerate(best_epochs_pd['epoch']):
+            try:
+                filename = filename_from_epoch_lookup[str(epoch)]
+                best_epochs_pd.loc[[index], 'file_name'] = filename
+                best_epochs_pd.loc[[index], 'model'] = load_model(filename)
+            except KeyError:
+                print('>>>ERROR: Best model is at epoch ' + str(epoch) + ' but the model could not be found')        
         return best_epochs_pd   
+    
+    
+    
+    def get_model_at_epoch(self, epoch):
+        #try:       
+        filename_from_epoch_lookup = self.__get_filename_from_epoch_lookup()
+        filename = filename_from_epoch_lookup[str(epoch)]
+        
+        model = None
+        try:
+            model = load_model(filename) 
+        except KeyError:
+            print('>>>ERROR: Model not found at epoch: ' + str(epoch))        
+        
+        return model
+       
+
+
+    
     
 if (__name__) == '__main__':
      
@@ -285,15 +314,14 @@ if (__name__) == '__main__':
     
     
     save_load_params = {
-                                'inference_mode': True,
-                                'continue_training_last_model' : True,
+                                'use_last_model' : True,
                                 'create_time_stamped_dirs' : True                                
                        }
     
     model_saver = model_load_and_save(model_save_top_directory, **save_load_params)
     print('log file: ' + model_saver.csv_save_file)  
 
-    best_model = model_saver.get_n_best_models(1)    
+    #best_model = model_saver.get_n_best_models(1)    
     
 #t = model_load_and_save(model_save_top_directory, **save_load_params)
 #t.csv_save_file

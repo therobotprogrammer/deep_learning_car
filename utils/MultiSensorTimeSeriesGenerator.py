@@ -27,7 +27,7 @@ class MultiSensorTimeSeriesGenerator(keras.utils.Sequence):
                  seed = None,
                  image_data_gen_obj = None,
                  swap_sensors_on_horizontal_flip = False,
-                 predict_generator_mode = False
+                 predict_mode = False
                  ):
         
         self.multi_sensor_data = multi_sensor_data
@@ -51,7 +51,7 @@ class MultiSensorTimeSeriesGenerator(keras.utils.Sequence):
 
         self.image_data_gen_obj = image_data_gen_obj
         self.swap_sensors_on_horizontal_flip = swap_sensors_on_horizontal_flip
-        self.predict_generator_mode = predict_generator_mode
+        self.predict_mode = predict_mode
 
         if self.start_index > self.end_index:
             raise ValueError('`start_index+length=%i > end_index=%i` '
@@ -189,7 +189,7 @@ class MultiSensorTimeSeriesGenerator(keras.utils.Sequence):
                     targets[j] = -targets[j]
 
 
-        if self.predict_generator_mode == False:       
+        if self.predict_mode == False:       
             return multi_camera_tensor, targets
         else:
             return multi_camera_tensor
@@ -346,7 +346,7 @@ if (__name__) == '__main__':
                  'time_axis':False,
                  'image_data_gen_obj': image_data_gen_obj,
                  'swap_sensors_on_horizontal_flip': True,
-                 'predict_generator_mode': False
+                 'predict_mode': False
              }
     
     

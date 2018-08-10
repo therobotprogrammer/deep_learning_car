@@ -35,7 +35,7 @@ class model_load_and_save:
         self.create_time_stamped_dirs = create_time_stamped_dirs
         self.local_timezone = local_timezone
         self.model_loaded_sucessfully = False
-        self.initial_epoch = 0,
+        self.initial_epoch = 1,
         
         self.setup_paths()
             

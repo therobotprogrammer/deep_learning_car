@@ -8,3 +8,13 @@ utils/__pycache__/custom_utils\.cpython-36\.pyc
 utils/__pycache__/MultiSensorTimeSeriesGenerator\.cpython-36\.pyc
 
 utils/__pycache__/
+
+*.tfrecord
+
+utils/store\.pickle
+
+utils/MultiSensorTimeSeriesGenerator\.py\.lprof
+
+utils/objs\.pkl
+
+utils/program\.prof

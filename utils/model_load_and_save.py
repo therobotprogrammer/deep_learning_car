@@ -35,9 +35,11 @@ class model_load_and_save:
         self.create_time_stamped_dirs = create_time_stamped_dirs
         self.local_timezone = local_timezone
         self.model_loaded_sucessfully = False
-        self.initial_epoch = 1,
+        self.initial_epoch = 1
         
         self.setup_paths()
+        
+        
             
 
         
@@ -76,7 +78,7 @@ class model_load_and_save:
                             
                         if saved_csv_save_file != None:
                             log_pd = pd.read_csv(saved_csv_save_file, header = 0)  
-                            self.initial_epoch = 1 + log_pd['epoch'].iloc[-1]                                                 
+                            self.initial_epoch = 1 + int(log_pd['epoch'].iloc[-1])                                                
                             print('>>> Previously saved model found. Training will continue from file: \n' + saved_model_filename) 
                             print('Initial epoch: ' + str(self.initial_epoch))
                         else:

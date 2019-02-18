@@ -26,6 +26,9 @@ from io import BytesIO
 #load our saved model
 from keras.models import load_model
 
+import time
+
+import cv2
 #helper class
 #import utils
 
@@ -38,41 +41,86 @@ model = None
 prev_image_array = None
 
 #set min/max speed for our autonomous car
-MAX_SPEED = 8
-MIN_SPEED = 3
+MAX_SPEED = 30
+MIN_SPEED = 5
 
+STEERING_MAX = 1
+STEERING_MIN = -1
 #and a speed limit
 speed_limit = MAX_SPEED
 
+scaled_speed_mode = False
 
 ################################################
 
 class SimplePIController:
-    def __init__(self, Kp, Ki):
+    def __init__(self, Kp, Ki, Kd):
         self.Kp = Kp
         self.Ki = Ki
+        self.Kd = Kd
         self.set_point = 0.
         self.error = 0.
         self.integral = 0.
+        self.old_time = time.time()
+        self.old_error = 0
+        self.first_update = True
 
     def set_desired(self, desired):
         self.set_point = desired
 
-    def update(self, measurement):
+    def update(self, measurement):       
+        
         # proportional error
-        self.error = self.set_point - measurement
+        self.new_error = self.set_point - measurement
+        #print('new error:', self.new_error)
+        proportional_correction = self.Kp * self.new_error
+        #print('p correction:', proportional_correction)
 
+        differential_correction = 0
+        
+        # derivative error
+        if self.first_update:
+            self.first_update = False            
+        else:
+            new_time = time.time()
+            differential_correction = (self.new_error - self.old_error) / (new_time - self.old_time)
+            differential_correction = self.Kd * differential_correction
+        
+        #print('D correction:>>>>>', differential_correction)
+        
+        self.old_error = self.error
+        self.old_time = new_time  
+        
         # integral error
-        self.integral += self.error
+        self.integral += self.new_error
+        self.integral_correction = self.Ki * self.integral
 
-        return self.Kp * self.error + self.Ki * self.integral
+        output =   proportional_correction + differential_correction
+        
+        
+#        if output < 0:
+#            output = 0
+        return output
+        #return 25
     
     
-controller = SimplePIController(0.01, 0)
-set_speed = 5
+controller = SimplePIController(.01,0,.01)
+set_speed = 25
 controller.set_desired(set_speed)
 
 
+def get_scaled_desired_speed(steering_angle):
+    deviation_from_center = abs(steering_angle)
+    
+    percent_deviation_in_steering = deviation_from_center/ ((STEERING_MAX - STEERING_MIN)/2)
+    
+    desired_speed_percent = 1 - percent_deviation_in_steering
+    
+    scaled_speed = desired_speed_percent * (MAX_SPEED - MIN_SPEED) + MIN_SPEED
+    
+    return scaled_speed
+ 
+    
 ####################################################
 
 #registering event handler for the server
@@ -95,6 +143,7 @@ def telemetry(sid, data):
             image_left_front = np.asarray(image_left_front)       # from PIL image to numpy array
             image_right_front = np.asarray(image_right_front)       # from PIL image to numpy array
 
+            
             #expand dims as we have 1 different networks expecting batch,width,height,channel shape.
             #batch_size = 1 in model.predict doesnt handle this. Hence batch = 1 has to be done for
             #every sub network
@@ -127,10 +176,13 @@ def telemetry(sid, data):
                 speed_limit = MAX_SPEED
             throttle = 1.0 - steering_angle**2 - (speed/speed_limit)**2
             '''
+#            if scaled_speed_mode:
+#                desired_speed = get_scaled_desired_speed(steering_angle)
+#                controller.set_desired(desired_speed)
             throttle = controller.update(speed)
             #steering_angle = steering_angle - 1
             #throttle = 0
-            print('{} {} {}'.format(steering_angle, throttle, speed))
+            print('{}      {}      {}'.format(steering_angle, throttle, speed))
             send_control(steering_angle, throttle)
         except Exception as e:
             print(e)
@@ -166,7 +218,7 @@ def send_control(steering_angle, throttle):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Remote Driving')
     
-    default_model = '/home/pt/Downloads/weights-37-0.01.h5'
+    default_model = '/home/pt/Documents/Results/deep_learning/01_Self_Driving_Car_Nvidia_Paper/saved_models/2019-2-13-10-0/weights-20-0.05.h5'
     default_image_folder = '/home/pt/Desktop/fake_google_drive/deep_learning/run'
     
     

@@ -39,7 +39,7 @@ elif compute_mode == 'local_dev':
     #script_dir = '/home/pt/scripts'
     project_dir = '/home/pt/Documents/deep_learning_car'
     auto_downloader_dir = '/home/pt/Documents/Auto-Downloader/Code'
-    data_dir = '/media/pt/ramdisk/data_big/data'
+    data_dir = '/home/pt/Documents/DATA/data_big/data'
     code_dir = '/home/pt/Documents/deep_learning_car/utils'
     download_code = False
     download_data = False
@@ -516,9 +516,9 @@ model_params =              {
 
 
 
-#driving_log_csv = data_dir + '/' + 'driving_log.csv'
+driving_log_csv = data_dir + '/' + 'driving_log.csv'
 
-driving_log_csv = data_dir + '/' + 'sampled_driving_log.csv'
+#driving_log_csv = data_dir + '/' + 'sampled_driving_log.csv'
 
 
 driving_log = custom_utils.update_driving_log(data_dir, driving_log_csv)

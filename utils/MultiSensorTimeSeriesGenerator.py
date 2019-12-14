@@ -420,12 +420,12 @@ if (__name__) == '__main__':
 
     
     image_data_gen_obj = keras.preprocessing.image.ImageDataGenerator(**image_generator_params)
-    image_data_gen_obj = None
+#    image_data_gen_obj = None
 
     batch_generator_params = {
                  'length' : 5,
                  'sampling_rate':1,
-                 'stride':1,
+                 'stride':2,
                  'start_index':0,
                  'end_index':None,
                  'shuffle':False,
@@ -441,7 +441,7 @@ if (__name__) == '__main__':
     
     
     
-    data_dir = '/media/pt/ramdisk/debug_data'
+    data_dir = '/home/pt/Documents/deep_learning_car/DATASET/Dataset to test time series generator/'
     driving_log_csv = data_dir + '/' + 'driving_log.csv'
     driving_log = custom_utils.update_driving_log(data_dir, driving_log_csv)
     driving_log = driving_log.reset_index()
@@ -449,7 +449,7 @@ if (__name__) == '__main__':
 
     batch_generator_params['create_tensors'] =  False
     batch_generator_params['read_tensors'] =  False
-    batch_generator_params['batch_size'] =  128
+    batch_generator_params['batch_size'] =  3
     
     generator = MultiSensorTimeSeriesGenerator([driving_log['center'], driving_log['left'], driving_log['right']], driving_log['steering'], **batch_generator_params)
     iterator = generator.__iter__()
@@ -484,9 +484,9 @@ if (__name__) == '__main__':
     # -------------------------------------------------------------
     # Load the dictionary back from the pickle file.
     
-    t1 = time.time()
-    loaded_batch = pickle.load(open("save.p", "rb"))
-    t2 = time.time()
+#    t1 = time.time()
+#    loaded_batch = pickle.load(open("save.p", "rb"))
+#    t2 = time.time()
     #print(t2-t1)
     # favorite_color is now {"lion": "yellow", "kitty": "red"}
     
@@ -497,17 +497,19 @@ if (__name__) == '__main__':
 
 
     
-#    for count in range(0,driving_log.shape[0]):
-#        t1 = time.time()
-#        
-#        batch = next(iterator)
-#        t2 = time.time()
-#        
-#        print('Iterator time: ', t2-t1)
-#        #custom_utils.show_batch(batch, batch_generator_params, save_dir = '/media/ramdisk/data/data', file_name_prefix = str(count))
-#        print(str(count))
-#        break
-#
+    for count in range(0,driving_log.shape[0]):
+        t1 = time.time()
+        
+        batch = next(iterator)
+        t2 = time.time()
+        
+        print('Iterator time: ', t2-t1)
+#        custom_utils.show_batch(batch, batch_generator_params, save_dir = '/media/ramdisk/data/data', file_name_prefix = str(count))
+        custom_utils.show_batch(batch, batch_generator_params, file_name_prefix = str(count))
+
+        print(str(count))
+        break
+
 
     
     

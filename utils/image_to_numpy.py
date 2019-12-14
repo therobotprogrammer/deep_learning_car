@@ -22,14 +22,12 @@ from functools import wraps
 import sys
 sys.path.insert(0, '/home/pt/repository/deep_learning_car/utils') 
 import custom_utils as custom_utils
-
 #Q Note: this is different from Keras API. as they use zoom_range etc. Later this can be changed
-
 import custom_utils as custom_utils
 from MultiSensorTimeSeriesGenerator import MultiSensorTimeSeriesGenerator
-
 import os
 import tensorflow as tf
+
 
 image_generator_params =    {   
                              'featurewise_center':False, 
@@ -77,7 +75,6 @@ batch_generator_params = {
          }
 
 
-
 data_dir = '/media/pt/ramdisk/data_big/data'
 driving_log_csv = data_dir + '/' + 'driving_log.csv'
 driving_log = custom_utils.update_driving_log(data_dir, driving_log_csv)
@@ -89,13 +86,8 @@ batch_generator_params['read_tensors'] =  False
 
 
 generator = MultiSensorTimeSeriesGenerator([driving_log['center'], driving_log['left'], driving_log['right']], driving_log['steering'], **batch_generator_params)
-
 iterator = generator.__iter__()
-
 total_batches_count = generator.__len__()
-
-
-
 tf_data_dir = data_dir + '/' + 'tf_records'
 
 #if not os.path.isdir(tf_data_dir):
@@ -114,28 +106,20 @@ toc = time.time()
 gen_time = toc-tic
 
 
-
-
 batch_generator_params['create_tensors'] =  True
 batch_generator_params['read_tensors'] =  False
 batch_generator_params['batch_size'] =  128
 
 generator = MultiSensorTimeSeriesGenerator([driving_log['center'], driving_log['left'], driving_log['right']], driving_log['steering'], **batch_generator_params)
-
-
 iterator = generator.__iter__()
 
 #custom_utils.show_batch(batch2, batch_generator_params)
 total_batches_count = generator.__len__()
 
-
 for batch_index in range(0, total_batches_count -1):
     batch = generator.__getitem__(batch_index)
     print('1: ' + str(batch_index))
     
-
-
-
 
 batch_generator_params['create_tensors'] =  False
 batch_generator_params['read_tensors'] =  True
@@ -143,12 +127,10 @@ batch_generator_params['batch_size'] =  128
 
 generator = MultiSensorTimeSeriesGenerator([driving_log['center'], driving_log['left'], driving_log['right']], driving_log['steering'], **batch_generator_params)
 
-
 iterator = generator.__iter__()
 
 #custom_utils.show_batch(batch2, batch_generator_params)
 total_batches_count = generator.__len__()
-
 
 tic = time.time()
 for batch_index in range(0, total_batches_count -1):
@@ -157,10 +139,7 @@ for batch_index in range(0, total_batches_count -1):
 toc = time.time()
 read_time = toc-tic
 
-    
 ratio = gen_time/read_time
-
-
 print (ratio)
 
 

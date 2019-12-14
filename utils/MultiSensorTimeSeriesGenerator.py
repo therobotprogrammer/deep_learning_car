@@ -44,10 +44,7 @@ class MultiSensorTimeSeriesGenerator(keras.utils.Sequence):
                  create_tensors = False,
                  read_tensors = False
                  ):
-        
-        
-        
-        
+    
         self.multi_sensor_data = multi_sensor_data
         self.single_sensor_data_sample = multi_sensor_data[0] #change this if different sensors give different dimentions of data
         self.targets = targets
@@ -74,20 +71,18 @@ class MultiSensorTimeSeriesGenerator(keras.utils.Sequence):
         self.create_tensors = create_tensors
         self.read_tensors = read_tensors
         
-        
         #assert self.read_tensors != self.create_tensors
-
+        
         if self.start_index > self.end_index:
             raise ValueError('`start_index+length=%i > end_index=%i` '
                              'is disallowed, as no part of the sequence '
                              'would be left to be used as current step.'
                              % (self.start_index, self.end_index))
-        
+            
         if typecast_target_datatype != None:
             self._convert_targets_datatype()
         
-        
-        
+
     def _convert_targets_datatype(self):        
         self.targets = self.targets.astype(self.typecast_target_datatype)     
         
@@ -96,19 +91,19 @@ class MultiSensorTimeSeriesGenerator(keras.utils.Sequence):
         return (self.end_index - self.start_index +
                 self.batch_size * self.stride) // (self.batch_size * self.stride)
 
+
     def _empty_batch(self, num_rows):
         samples_shape = [num_rows, self.length // self.sampling_rate, *self.image_dimention, self.n_channels]
         samples_shape.extend(self.single_sensor_data_sample.shape[1:])
         targets_shape = [num_rows]
         targets_shape.extend(self.targets.shape[1:]) 
         
-        #Here using np.uint8 is very important. Otherwise Image is loaded as uint8 and then converted to uint64
-        
+        #Here using np.uint8 is very important. Otherwise Image is loaded as uint8 and then converted to uint64        
         ###To Do: make numpy compatible
         return np.empty(samples_shape, dtype=np.uint8), np.empty(targets_shape, dtype=self.typecast_target_datatype)
         #return (numpy_empty)
     
-
+    
     #@profile
     def __getitem__(self, index):
         t1 = time.time()
@@ -117,7 +112,6 @@ class MultiSensorTimeSeriesGenerator(keras.utils.Sequence):
         if self.shuffle:
             #Q: we have to have replace = False for dicitonary of rows to work. Also thread safety maybe?
             rows = np.random.choice(range(self.start_index, self.end_index + 1), size=self.batch_size, replace=False)
-            
             '''
             rows = np.random.randint(
                 self.start_index, self.end_index + 1, size=self.batch_size)
@@ -125,23 +119,18 @@ class MultiSensorTimeSeriesGenerator(keras.utils.Sequence):
         else:
             i = self.start_index + self.batch_size * self.stride * index
             rows = np.arange(i, min(i + self.batch_size * self.stride, self.end_index + 1), self.stride)
-            
-            
-            
-                
+     
         multi_camera_tensor = []        
         
         for sensor_index in range(0,self.n_sensors):
             samples,targets = self.__getcameraTensor(sensor_index, rows) # is this bad programming? - to do: code review
             multi_camera_tensor.append(samples)
-        
-        
+           
         if self.image_data_gen_obj != None:
             #Q: Code review - To Do:
             #Q: Code reivew: should we pass multi_camera_tensor or use self. ? do we create an extra copy by not using self. ? 
             #Q: Dows this use twice the ram? May be significant for latge datasets
-            #Q: Is it better to use a callback funciton here or just take image_data_gen_obj obj
-            
+            #Q: Is it better to use a callback funciton here or just take image_data_gen_obj obj            
             multi_camera_tensor, targets = self.__applyAugmentations(rows, multi_camera_tensor, targets)
             
         
@@ -158,8 +147,7 @@ class MultiSensorTimeSeriesGenerator(keras.utils.Sequence):
     
     
     def __get_all_sensor_transforms(self, rows):
-        all_sensor_transforms = {}
-        
+        all_sensor_transforms = {}        
         for row in rows:
             all_sensor_transforms[row]  = self.image_data_gen_obj.get_random_transform(self.image_dimention, self.seed)
             
@@ -229,19 +217,16 @@ class MultiSensorTimeSeriesGenerator(keras.utils.Sequence):
          
                     targets[j] = -targets[j]
 
-
         if self.predict_mode == False:       
             return multi_camera_tensor, targets
         else:
             return multi_camera_tensor
 
 
-
     def debug_show_row(self,temp_row):       
         plt.figure(figsize=(25,25)) #Floating point image RGB values must be in the 0..1 range.
         
-        image_count = 1 
-        
+        image_count = 1         
         for t, timestep in enumerate(temp_row):        
             plt.subplot(1, len(temp_row), image_count)
             image_count = image_count + 1
@@ -249,7 +234,6 @@ class MultiSensorTimeSeriesGenerator(keras.utils.Sequence):
             plt.axis("off")
             
         plt.show()
-        
     
     
     def __get_sensor_image_data_gen_obj(self,single_sensor_samples_batch):
@@ -278,21 +262,14 @@ class MultiSensorTimeSeriesGenerator(keras.utils.Sequence):
         else:
             return False
     
-    
-      
         
     def __getcameraTensor(self, sensor_index, rows):     
         single_sensor_data = self.multi_sensor_data[sensor_index]
-        single_sensor_targets = self.targets
-        
+        single_sensor_targets = self.targets        
         single_sensor_samples_batch, single_sensor_targets_batch = self._empty_batch(len(rows))       
-        
-        
+
         t1_batch = time.time()
 
-
-        
-        
         if self.read_tensors:
             folder = '/mnt/optane/saved_tensors'
             
@@ -302,13 +279,8 @@ class MultiSensorTimeSeriesGenerator(keras.utils.Sequence):
                     single_sensor_samples_batch[j] = h5f['row'][:]
 #                    viewer = ImageViewer(read_row[0])
 #                    viewer.show()
-                    
-                     
-                    
-                    
                     single_sensor_targets_batch[j] =   h5f['target'][...]                
             return single_sensor_samples_batch, single_sensor_targets_batch         
-                    
                     
         for j, row in enumerate(rows):
             #Note: Be careful of off-by-one errors with rows. 
@@ -323,7 +295,6 @@ class MultiSensorTimeSeriesGenerator(keras.utils.Sequence):
             for index in indices_consecutive_timesteps:
                 file_names_consecutive_timesteps.append(single_sensor_data[index])
                 
-            
             t1_row = time.time()
             for t, file_at_timestep in enumerate(file_names_consecutive_timesteps): 
                 #we did not use time 0 to t because length will be different if we skip frames
@@ -355,8 +326,7 @@ class MultiSensorTimeSeriesGenerator(keras.utils.Sequence):
         #print('Batch time: ', t2_batch - t1_batch , '   Sample Time: ', t2_row-t1_row )   
         
         if self.create_tensors:
-            folder = '/mnt/optane/saved_tensors'
-            
+            folder = '/mnt/optane/saved_tensors'            
             h5f = h5py.File(folder + '/' + str(sensor_index) + '_' + str(row) + '.h5', 'w')           
             
             for j, row in enumerate(rows):
@@ -364,14 +334,9 @@ class MultiSensorTimeSeriesGenerator(keras.utils.Sequence):
                 with h5py.File(filename, 'w') as h5f:
                     h5f.create_dataset('row', data=single_sensor_samples_batch[j])
                     h5f.create_dataset('target', data= single_sensor_targets_batch[j])
-            
-        
 
-            
         return single_sensor_samples_batch, single_sensor_targets_batch   
  
-
-
 
 def show_sample_from_generator(generator, batch_generator_params):
     iterator = generator.__iter__()
@@ -379,21 +344,15 @@ def show_sample_from_generator(generator, batch_generator_params):
     custom_utils.show_batch(batch, batch_generator_params)
 
 
-
-
-
-           
-if (__name__) == '__main__':
- 
+     
+if (__name__) == '__main__': 
     ##########################################################################
     import sys
     sys.path.insert(0, '/home/pt/repository/deep_learning_car/utils') 
     import custom_utils as custom_utils
     
     #Q Note: this is different from Keras API. as they use zoom_range etc. Later this can be changed
-    
-    
-    
+
     image_generator_params =    {   
                                  'featurewise_center':False, 
                                  'samplewise_center':False, 
@@ -417,11 +376,10 @@ if (__name__) == '__main__':
                                  'data_format':None, 
                                  'validation_split':0.0
                              }
-
     
     image_data_gen_obj = keras.preprocessing.image.ImageDataGenerator(**image_generator_params)
 #    image_data_gen_obj = None
-
+    
     batch_generator_params = {
                  'length' : 5,
                  'sampling_rate':1,
@@ -438,14 +396,11 @@ if (__name__) == '__main__':
                  'swap_sensors_on_horizontal_flip': True,
                  'predict_mode': False
              }
-    
-    
-    
+
     data_dir = '/home/pt/Documents/deep_learning_car/DATASET/Dataset to test time series generator/'
     driving_log_csv = data_dir + '/' + 'driving_log.csv'
     driving_log = custom_utils.update_driving_log(data_dir, driving_log_csv)
     driving_log = driving_log.reset_index()
-
 
     batch_generator_params['create_tensors'] =  False
     batch_generator_params['read_tensors'] =  False
@@ -453,66 +408,22 @@ if (__name__) == '__main__':
     
     generator = MultiSensorTimeSeriesGenerator([driving_log['center'], driving_log['left'], driving_log['right']], driving_log['steering'], **batch_generator_params)
     iterator = generator.__iter__()
-
-    
-
-    #%load_ext snakeviz
-    #%%snakeviz
-    #lp.add_function(__getitem__)    
-    #lp_wrapper = lp(next(iterator))
-    
-    
-#    lp = LineProfiler()
-    
-
-    t1 = time.time()
-    
+   
+    t1 = time.time()    
     batch = generator.__getitem__(0)
     t2 = time.time()
-    #print(t2-t1)
-    
-    #f = open('/media/ramdisk/temp/store.pickle', 'wb') as handle:
-        
 
-    
-    # Save a dictionary into a pickle file.
-    #import pickle
-    
-    
-    #pickle.dump(batch, open("save.p", "wb"))  # save it into a file named save.p
-    
-    # -------------------------------------------------------------
-    # Load the dictionary back from the pickle file.
-    
-#    t1 = time.time()
-#    loaded_batch = pickle.load(open("save.p", "rb"))
-#    t2 = time.time()
-    #print(t2-t1)
-    # favorite_color is now {"lion": "yellow", "kitty": "red"}
-    
-    
-#    lp.add_function(generator.__getitem__(1))
-#    lp.print_stats()
-    
-
-
-    
     for count in range(0,driving_log.shape[0]):
-        t1 = time.time()
-        
+        t1 = time.time()        
         batch = next(iterator)
         t2 = time.time()
         
         print('Iterator time: ', t2-t1)
 #        custom_utils.show_batch(batch, batch_generator_params, save_dir = '/media/ramdisk/data/data', file_name_prefix = str(count))
         custom_utils.show_batch(batch, batch_generator_params, file_name_prefix = str(count))
-
         print(str(count))
         break
 
-
-    
-    
 ### To Do: Remove t1 t2 references. They are not needed after debugging
 ### To Do: Add support to pass uint8 etc for other image formats or precision for Tensor Cores    
     

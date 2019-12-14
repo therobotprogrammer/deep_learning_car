@@ -10,28 +10,17 @@ Created on Sat Jul 28 13:08:36 2018
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
-
 import os
-
-
 import numpy as np
-
+import warnings
 
 try:
     import requests
 except ImportError:
     requests = None
-
-
-import warnings
-
-
-#from . import backend as K
 import keras.backend as K
 from keras.engine.training_utils import standardize_input_data
 #from .engine.training_utils import standardize_input_data
-
-
 from keras.callbacks import Callback
     
 class colab_TensorBoard(Callback):

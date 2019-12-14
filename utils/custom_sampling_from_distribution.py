@@ -17,15 +17,12 @@ Created on Tue Feb  5 14:27:06 2019
 
 import sys
 import math
-
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import Normalizer
 import matplotlib.pyplot as plt 
 from scipy.stats import truncnorm, norm
 import seaborn as sns
-
-
 import numpy as np
 import bisect
 
@@ -36,7 +33,6 @@ code_dir = '/home/pt/Documents/deep_learning_car/utils'
 
 sys.path.insert(0, code_dir) 
 import custom_utils as custom_utils
-
     
 
 driving_log_csv = data_dir + '/' + 'driving_log.csv'
@@ -49,45 +45,33 @@ bins = sample_df.groups
 sorted_bins = np.array(list(bins.keys()))
 sorted_bins.sort()
 
-
 max_random_sampling_point = -2
 
 def find_nearest_bin(key_to_find):
     #These if statements are to make a search inclusive of -1 and +1. 
     #This inclusion is done by sclecting side. Otherwise -.999 becomes -.95 bin and not -1 bin and vice versa
     if key_to_find > 0 and key_to_find <= 1:
-        closest_id = np.searchsorted(sorted_bins,key_to_find, side = 'left')   
-        
+        closest_id = np.searchsorted(sorted_bins,key_to_find, side = 'left')          
     elif key_to_find <= 0:
         closest_id = np.searchsorted(sorted_bins,key_to_find, side = 'right')
         closest_id = closest_id-1
-        
     elif key_to_find > 1:    
         closest_id = np.searchsorted(sorted_bins,key_to_find, side = 'left')
         closest_id = closest_id-1
-        
     elif key_to_find < 1:    
         closest_id = np.searchsorted(sorted_bins,key_to_find, side = 'left')
         closest_id = closest_id-1
-
     else:
         closest_id = np.searchsorted(sorted_bins,key_to_find, side = 'left')
-        
     return sorted_bins[closest_id]
-
-
 
 
 def find_nearest_4(key_to_find):
     #These if statements are to make a search inclusive of -1 and +1. 
     #This inclusion is done by sclecting side. Otherwise -.999 becomes -.95 bin and not -1 bin and vice versa
-
     closest_id = np.searchsorted(sorted_bins,key_to_find, side = 'right')
     closest_id = closest_id-1
-       
     return sorted_bins[closest_id]
-
-
 
 
 def find_nearest_bin_2(key_to_find):
@@ -99,7 +83,6 @@ def find_nearest_bin_2(key_to_find):
 #
 #    print('value_l',closest_id_left)
 #    print('value_r', closest_id_right)    
-    
     return sorted_bins[closest_id_left]
 
 
@@ -140,12 +123,6 @@ def get_closest(sorted_bins, values):
     idxs[prev_idx_is_less] -= 1
 
     return array[idxs]
-#def get_distribution_resolution(original_samples):
-
-#for sample_bin in enumerate(sorted_bins):
-#    if sample_bin
-#
-#
 
 
 def get_closest2(value):
@@ -192,16 +169,12 @@ distribution_resolution = 10000
 distribution_range_min = -1
 distribution_range_max = 1
 distribution_type = 'random'
-
 correct_edges_for_random_distribution = True
-
-
 
 
 
 import random
 random.seed(100)
-
 distribution = 0
 
 if distribution_type == 'normal':
@@ -244,32 +217,20 @@ plt.title('Source distribution used for sampling')
 sns.distplot(distribution, hist=True, kde=True, color = 'green', hist_kws={'edgecolor':'black'}, bins = sorted_bins.size)
 
 
-
-
 plt.figure()
 plt.title('Targets - Samples using distribution')
 sns.distplot(sampled_driving_log['steering'], hist=True, kde=True, color = 'red', hist_kws={'edgecolor':'black'}, bins = sorted_bins.size)
 
 
-
 sampled_driving_log.groupby('steering').count().plot()
-
-
-
-
-
-
 
 #temp = balanced_driving_log.sort_index()
 sampled_driving_log_csv = data_dir + '/' + 'sampled_driving_log.csv'
 sampled_driving_log.to_csv(sampled_driving_log_csv, index = False, header = True)   
 #balanced_driving_log = driving_log_pd.reset_index(drop = True)  
 
-
 new_bins = sampled_driving_log.groupby('steering').groups
 sampled_driving_log.groupby('steering').size()
-
-
 
 assert (len(bins) == len(new_bins)), 'Some samples were lost. Try increasing resolution of distribution used. '
 

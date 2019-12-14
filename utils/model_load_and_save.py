@@ -18,7 +18,6 @@ import pandas as pd
 #google_drive = '/home/pt/Desktop/google_drive'
 ### Model save location ###
 
-
 save_load_params = {
                             'use_last_model' = True,
                             'create_time_stamped_directories' = True                                
@@ -38,25 +37,16 @@ class model_load_and_save:
         self.initial_epoch = 1
         
         self.setup_paths()
-        
-        
-            
 
-        
-        
-    def setup_paths(self):
-                  
-        self.model = None
-        
+    def setup_paths(self):                  
+        self.model = None        
         if not self.use_last_model:         
             if os.path.isdir(self.model_save_top_directory):
                 self.deep_cleanup(self.model_save_top_directory)
             else:
                 os.makedirs(self.model_save_top_directory)
 
-
         model_save_directory = self.model_save_top_directory
-        
         
         if (self.use_last_model) == True:
           last_model_dir = self.getlastmodeldir(self.model_save_top_directory) #assumes sub dir names are appended with time strings
@@ -84,7 +74,7 @@ class model_load_and_save:
                         else:
                             print('Saved CSV file not found or was invalid with size = 0 bytes. Creating new csv filename and setting initial_spoch to 1')
                             self.initial_epoch = 1                
-    
+                            
                 else:
                     print('>>> No saved models found.')
                     raise(OSError)  
@@ -121,10 +111,8 @@ class model_load_and_save:
         '''
         
    
-   
     def deep_cleanup(self, currentDir):
-      index = 0
-    
+      index = 0    
       for root, dirs, files in os.walk(currentDir):
         # remove empty files. 
         #Usecase: when keras callback CSVLogger is enabled and training interupted 
@@ -155,10 +143,8 @@ class model_load_and_save:
               print (" ")
 
 
-    
     def cleanup(self, main_dir, show_relative_dir_names = False):
         sub_dirs = glob(main_dir + '/*/')
-        
         if sub_dirs == None:
             return
         else:
@@ -183,7 +169,6 @@ class model_load_and_save:
                   print (" ") 
     
     
-                  
     def getlastmodeldir(self, main_dir):
       sub_dirs = glob(main_dir + '/*/')     
       sub_dirs = sorted(sub_dirs)
@@ -214,20 +199,16 @@ class model_load_and_save:
                 return last_model_hdf5
             
 
-    
-    def get_last_file(self, directory, file_type):    
-        
+    def get_last_file(self, directory, file_type):   
         last_model = glob(directory + '/*.' + file_type) 
         last_model = sorted(last_model)            
         
         if last_model == []:           
             return None
-        
         return last_model[-1]
     
     
     def get_time_string(self):
-        
         utc_time = pytz.utc.localize(datetime.datetime.utcnow())
         local_time = utc_time.astimezone(pytz.timezone(self.local_timezone))  
                 
@@ -240,16 +221,13 @@ class model_load_and_save:
         time_string = year + '-' + month + '-' + day + '-' + hour + '-' + minute
         return(time_string)
         
-        
 
     def get_files_of_type(self, directory, file_type):    
-        
         files = glob(directory + '/*.' + file_type) 
         files = sorted(files)            
         
         if files == []:           
             return None
-        
         return files
 
     
@@ -288,7 +266,6 @@ class model_load_and_save:
         return best_epochs_pd   
     
     
-    
     def get_model_at_epoch(self, epoch):
         #try:       
         filename_from_epoch_lookup = self.__get_filename_from_epoch_lookup()
@@ -301,20 +278,15 @@ class model_load_and_save:
             print('>>>ERROR: Model not found at epoch: ' + str(epoch))        
         
         return model
-       
 
 
-    
     
 if (__name__) == '__main__':
      
-    google_drive = '/home/pt/fake_google_drive'
-
-    
+    google_drive = '/home/pt/fake_google_drive'    
     model_save_top_directory = google_drive + '/deep_learning/01_Self_Driving_Car_Nvidia_Paper/saved_models' 
     #model_save_top_directory = '~/my_deep_learning/01_Self_Driving_Car_Nvidia_Paper/saved_models' 
-    
-    
+
     save_load_params = {
                                 'use_last_model' : True,
                                 'create_time_stamped_dirs' : True                                

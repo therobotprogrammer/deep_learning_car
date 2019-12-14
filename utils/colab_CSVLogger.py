@@ -10,13 +10,10 @@ Created on Sat Jul 28 13:08:36 2018
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
-
 import os
 import csv
 import six
-
 import numpy as np
-
 from collections import OrderedDict
 from collections import Iterable
 
@@ -98,8 +95,7 @@ class colab_CSVLogger(Callback):
         row_dict = OrderedDict({'epoch': epoch})
         row_dict.update((key, handle_value(logs[key])) for key in self.keys)
         self.writer.writerow(row_dict)
-        self.csv_file.flush()
-        
+        self.csv_file.flush()        
         self.csv_file.close()
         self.writer = None
 

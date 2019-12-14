@@ -8,7 +8,6 @@ Created on Mon Feb  4 14:24:12 2019
 
 import sys
 import math
-
 import numpy as np
 import pandas as pd
 
@@ -18,8 +17,7 @@ code_dir = '/home/pt/Documents/deep_learning_car/utils'
 
 sys.path.insert(0, code_dir) 
 import custom_utils as custom_utils
-
-    
+   
 
 driving_log_csv = data_dir + '/' + 'driving_log.csv'
 driving_log = custom_utils.update_driving_log(data_dir, driving_log_csv)

@@ -65,11 +65,12 @@ class SimplePIController:
         self.old_error = 0
         self.first_update = True
 
+
     def set_desired(self, desired):
         self.set_point = desired
 
-    def update(self, measurement):       
-        
+
+    def update(self, measurement):      
         # proportional error
         self.new_error = self.set_point - measurement
         #print('new error:', self.new_error)
@@ -97,7 +98,6 @@ class SimplePIController:
 
         output =   proportional_correction + differential_correction
         
-        
 #        if output < 0:
 #            output = 0
         return output
@@ -111,13 +111,9 @@ controller.set_desired(set_speed)
 
 def get_scaled_desired_speed(steering_angle):
     deviation_from_center = abs(steering_angle)
-    
     percent_deviation_in_steering = deviation_from_center/ ((STEERING_MAX - STEERING_MIN)/2)
-    
     desired_speed_percent = 1 - percent_deviation_in_steering
-    
     scaled_speed = desired_speed_percent * (MAX_SPEED - MIN_SPEED) + MIN_SPEED
-    
     return scaled_speed
  
     
@@ -142,7 +138,6 @@ def telemetry(sid, data):
             image = np.asarray(image)       # from PIL image to numpy array
             image_left_front = np.asarray(image_left_front)       # from PIL image to numpy array
             image_right_front = np.asarray(image_right_front)       # from PIL image to numpy array
-
             
             #expand dims as we have 1 different networks expecting batch,width,height,channel shape.
             #batch_size = 1 in model.predict doesnt handle this. Hence batch = 1 has to be done for
@@ -195,7 +190,6 @@ def telemetry(sid, data):
             image.save('{}.jpg'.format(image_filename))
         '''
     else:
-        
         sio.emit('manual', data={}, skip_sid=True)
 
 
@@ -220,7 +214,6 @@ if __name__ == '__main__':
     
     default_model = '/home/pt/Documents/Results/deep_learning/01_Self_Driving_Car_Nvidia_Paper/saved_models/2019-2-13-10-0/weights-20-0.05.h5'
     default_image_folder = '/home/pt/Desktop/fake_google_drive/deep_learning/run'
-    
     
     parser.add_argument(
         '--model',

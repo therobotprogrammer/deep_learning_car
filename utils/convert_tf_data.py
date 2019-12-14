@@ -6,7 +6,6 @@ Created on Thu Jan 31 13:43:45 2019
 @author: pt
 """
 from tensorflow import keras
-
 import MultiSensorTimeSeriesGenerator
 from skimage.io import imread
 from skimage.transform import resize
@@ -18,7 +17,6 @@ import cv2
 from matplotlib import pyplot as plt
 import random
 from keras.preprocessing import image
-
 #Profiler tools
 import time
 from line_profiler import LineProfiler
@@ -33,10 +31,8 @@ sys.path.insert(0, '/home/pt/repository/deep_learning_car/utils')
 import custom_utils as custom_utils
 
 #Q Note: this is different from Keras API. as they use zoom_range etc. Later this can be changed
-
 import custom_utils as custom_utils
 from MultiSensorTimeSeriesGenerator import MultiSensorTimeSeriesGenerator
-
 import os
 import tensorflow as tf
 
@@ -97,11 +93,8 @@ driving_log = driving_log.reset_index()
 generator = MultiSensorTimeSeriesGenerator([driving_log['center'], driving_log['left'], driving_log['right']], driving_log['steering'], **batch_generator_params)
 
 iterator = generator.__iter__()
-
 batch1 = generator.__getitem__(0)
 #custom_utils.show_batch(batch1, batch_generator_params)
-
-
 tf_data_dir = data_dir + '/' + 'tf_records'
 
 if not os.path.isdir(tf_data_dir):
@@ -120,17 +113,6 @@ else:
 #    if batch_index == 1:
 #        break
 #    
-
-
-
-
-
-
-
-
-
-
-
 #features_placeholder = tf.placeholder(features.dtype, features.shape)
 #labels_placeholder = tf.placeholder(labels.dtype, labels.shape)
 #
@@ -151,7 +133,6 @@ else:
 
 total_batches = generator.__len__()
 combined_dataset = tf.data.Dataset
-
 batch =  generator.__getitem__(0)
 b = batch[1].tolist()
 

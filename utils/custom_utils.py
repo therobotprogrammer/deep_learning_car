@@ -16,15 +16,12 @@ import pandas as pd
 from matplotlib import pyplot as plt
 
 
-     
-    
 def strip_filenames(old_path):
     old_path = old_path.split("\\") #handles windows generated files
     *directory, filename = old_path        
     directory, filename = os.path.split(filename) #handles linux generated files
     return("/" + filename) 
     
-
 
 def update_driving_log(data_dir, driving_log_csv = None, relative_path = False, target_data_type = 'float64'):  
     if driving_log_csv == None:
@@ -42,14 +39,12 @@ def update_driving_log(data_dir, driving_log_csv = None, relative_path = False, 
     driving_log_pd_temp = driving_log_pd_temp.applymap(strip_filenames)    
     driving_log_pd_temp = new_image_path + driving_log_pd_temp.astype(str)    
     driving_log_pd.iloc[:,0:3] = driving_log_pd_temp      
-    driving_log_pd.columns = ['center','left', 'right', 'steering','throttle','brake','speed']  
-      
+    driving_log_pd.columns = ['center','left', 'right', 'steering','throttle','brake','speed']        
     driving_log_pd['steering'] = driving_log_pd['steering'].astype(target_data_type)
     
     driving_log_pd.to_csv(driving_log_csv, index = False, header = True)   
     driving_log_pd = driving_log_pd.reset_index(drop = True)  
     return driving_log_pd
-
 
 
 def show_batch(batch, batch_generator_params, save_dir = None, file_name_prefix = None ):
@@ -61,8 +56,7 @@ def show_batch(batch, batch_generator_params, save_dir = None, file_name_prefix 
     index = {'sample':0,'time':1,'height':2,'width':3,'channels':4}        
 
     if batch_generator_params['time_axis'] == False:
-        total_timesteps = 1
-       
+        total_timesteps = 1       
         
     for camera in range(0,total_cameras):
         samples_batch = multi_camera_samples_batch[camera]        
@@ -75,12 +69,8 @@ def show_batch(batch, batch_generator_params, save_dir = None, file_name_prefix 
            total_timesteps = volume_shape[index['time']]   
         
         total_samples = volume_shape[index['sample']]          
-
-        
         #plt.figure(figsize=figsize) 
         #plt.figure()        
-
-
         image_count = 1
 
         for s, sample in enumerate(samples_batch):    
@@ -109,8 +99,6 @@ def show_batch(batch, batch_generator_params, save_dir = None, file_name_prefix 
 
 
     plt.close()
-
-    
     print('\nLabels Batch')
     
     for label in multi_camera_labels_batch:

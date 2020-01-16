@@ -14,7 +14,7 @@ Deep Learning: End to End Deep Learning for Self-Driving Cars
 
 
 
-Watch the Video:
+Watch the video by clicking the following picture:
 
 
 [![](https://img.youtube.com/vi/KL6Aax407FA/0.jpg)](https://youtu.be/KL6Aax407FA)
